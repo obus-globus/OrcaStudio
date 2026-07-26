@@ -9,6 +9,7 @@
 
 #include <wx/mstream.h>
 #include <wx/dcmemory.h>
+#include <exception>
 
 namespace Slic3r {
 namespace GUI
@@ -351,14 +352,29 @@ wxString DeviceErrorDialog::parse_error_level(int error_code)
 static const std::unordered_set<string> s_jump_liveview_error_codes = { "0300-8003", "0300-8002", "0300-800A"};
 wxString DeviceErrorDialog::show_error_code(int error_code)
 {
-    if (m_error_code == error_code) { return wxEmptyString;}
-    if (wxGetApp().get_hms_query()->is_internal_error(m_obj, error_code)) { return wxEmptyString;}
+    if (!m_obj || m_error_code == error_code) { return wxEmptyString;}
+
+    try {
+        if (wxGetApp().get_hms_query()->is_internal_error(m_obj, error_code)) { return wxEmptyString;}
+    } catch (const std::exception& e) {
+        BOOST_LOG_TRIVIAL(error) << "DeviceErrorDialog::is_internal_error failed: " << e.what();
+    } catch (...) {
+        BOOST_LOG_TRIVIAL(error) << "DeviceErrorDialog::is_internal_error failed";
+    }
 
     /* error code str*/
     std::string error_str = m_obj->get_error_code_str(error_code);
+    m_error_code = error_code;
 
     /* error code message*/
-    wxString error_msg = wxGetApp().get_hms_query()->query_print_error_msg(m_obj, error_code);
+    wxString error_msg;
+    try {
+        error_msg = wxGetApp().get_hms_query()->query_print_error_msg(m_obj, error_code);
+    } catch (const std::exception& e) {
+        BOOST_LOG_TRIVIAL(error) << "DeviceErrorDialog::query_print_error_msg failed: " << e.what();
+    } catch (...) {
+        BOOST_LOG_TRIVIAL(error) << "DeviceErrorDialog::query_print_error_msg failed";
+    }
     if (error_msg.IsEmpty()) { error_msg = _L("Unknown error.");}
 
     /* parse error level */
@@ -374,7 +390,16 @@ wxString DeviceErrorDialog::show_error_code(int error_code)
     } else {
         /* action buttons*/
         std::vector<int> used_button;
-        wxString         error_image_url = wxGetApp().get_hms_query()->query_print_image_action(m_obj, error_code, used_button);
+        wxString error_image_url;
+        try {
+            error_image_url = wxGetApp().get_hms_query()->query_print_image_action(m_obj, error_code, used_button);
+        } catch (const std::exception& e) {
+            BOOST_LOG_TRIVIAL(error) << "DeviceErrorDialog::query_print_image_action failed: " << e.what();
+            used_button.clear();
+        } catch (...) {
+            BOOST_LOG_TRIVIAL(error) << "DeviceErrorDialog::query_print_image_action failed";
+            used_button.clear();
+        }
         if (s_jump_liveview_error_codes.count(error_str)) { used_button.emplace_back(DeviceErrorDialog::JUMP_TO_LIVEVIEW); } // special case
 
         /* do update*/
@@ -385,15 +410,6 @@ wxString DeviceErrorDialog::show_error_code(int error_code)
     Show();
     Raise();
 
-#ifndef __linux__
-    // Orca: skip RequestUserAttention on Linux/Wayland (urgency-hint deadlock).
-    // On Linux (especially Wayland) RequestUserAttention(wxUSER_ATTENTION_ERROR) maps to
-    // gtk_window_set_urgency_hint(TRUE) which can leave the window in an urgent-but-unfocused
-    // state — clicks no longer reach any widget in the app and the user has to kill the
-    // process to recover. Same root cause as #9874, where SecondaryCheckDialog had its
-    // RequestUserAttention call removed for the identical reason.
-    this->RequestUserAttention(wxUSER_ATTENTION_ERROR);
-#endif
 
     return error_msg;
 }
@@ -417,12 +433,11 @@ void DeviceErrorDialog::update_contents(const wxString& title, const wxString& t
         m_sizer_button->Clear();
         m_used_button.clear();
 
-        // Show the used buttons
-        bool need_remove_close_btn = false;
+        // Show the used buttons. HMS notifications must remain dismissible.
         std::unordered_set<int> shown_btns;
         for (int button_id : btns)
         {
-            need_remove_close_btn |= (button_id == REMOVE_CLOSE_BTN); // special case, do not show close button
+            if (button_id == REMOVE_CLOSE_BTN) { continue; }
 
             auto iter = m_button_list.find(button_id);
             if (iter != m_button_list.end())
@@ -433,15 +448,7 @@ void DeviceErrorDialog::update_contents(const wxString& title, const wxString& t
             }
         }
 
-        // Special case, do not show close button
-        if (need_remove_close_btn)
-        {
-            SetWindowStyle(GetWindowStyle() & ~wxCLOSE_BOX);
-        }
-        else
-        {
-            SetWindowStyle(GetWindowStyle() | wxCLOSE_BOX);
-        }
+        SetWindowStyle(GetWindowStyle() | wxCLOSE_BOX);
 
         // Hide unused buttons
         for (const auto& pair : m_button_list)

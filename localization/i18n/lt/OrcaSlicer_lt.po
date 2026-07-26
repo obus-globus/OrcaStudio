@@ -20103,6 +20103,9 @@ msgstr "Diegiama versija:"
 msgid "Download and Install"
 msgstr "Atsisiųsti ir įdiegti"
 
+msgid "Skip for Now"
+msgstr "Kol kas praleisti"
+
 msgid "A new version of the Bambu Network Plug-in is available."
 msgstr "Išleista nauja „Bambu“ tinklo papildinio versija."
 
@@ -20119,6 +20122,12 @@ msgstr "Daugiau neklausti"
 msgid "Update Now"
 msgstr "Atnaujinti dabar"
 
+msgid "Remind Later"
+msgstr "Priminti vėliau"
+
+msgid "Skip Version"
+msgstr "Praleisti šią versiją"
+
 msgid "(Latest)"
 msgstr "(Naujausia)"
 
@@ -20133,6 +20142,9 @@ msgstr "Norint įkelti naują papildinį, programą reikia paleisti iš naujo. A
 
 msgid "Restart Now"
 msgstr "Paleisti iš naujo dabar"
+
+msgid "Restart Later"
+msgstr "Paleisti iš naujo vėliau"
 
 msgid "NO RAMMING AT ALL"
 msgstr "VISIŠKAI NENAUDOTI SUTANKINIMO"
@@ -20742,18 +20754,6 @@ msgstr ""
 
 #~ msgid "Hotend"
 #~ msgstr "Kaitinimo blokas (Hotend)"
-
-#~ msgid "Skip for Now"
-#~ msgstr "Kol kas praleisti"
-
-#~ msgid "Remind Later"
-#~ msgstr "Priminti vėliau"
-
-#~ msgid "Skip Version"
-#~ msgstr "Praleisti šią versiją"
-
-#~ msgid "Restart Later"
-#~ msgstr "Paleisti iš naujo vėliau"
 
 #~ msgid "Select filament that installed to the left nozzle"
 #~ msgstr "Pasirinkite giją, įstatytą į kairįjį purkštuką"

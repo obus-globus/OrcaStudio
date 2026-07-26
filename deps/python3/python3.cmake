@@ -15,7 +15,10 @@ if(WIN32)
     # See https://github.com/python/cpython/issues/153438
     # Patch from https://github.com/python/cpython/pull/153608
     # This patch has not been merged to 3.12 yet so we need to apply it manually
-    set(_patch_cmd git init && ${PATCH_CMD} ${CMAKE_CURRENT_LIST_DIR}/01-windows-nuget.patch)
+    # git apply works without `git init`. Keeping the extracted CPython tree
+    # outside a Git worktree also prevents its CI-only SBOM generator from
+    # performing network downloads during the deterministic dependency build.
+    set(_patch_cmd ${PATCH_CMD} ${CMAKE_CURRENT_LIST_DIR}/01-windows-nuget.patch)
 
     if(MSVC_VERSION EQUAL 1800)
         set(_python_platform_toolset v120)

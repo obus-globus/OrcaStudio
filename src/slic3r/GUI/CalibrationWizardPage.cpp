@@ -2,6 +2,7 @@
 #include "I18N.hpp"
 #include "Widgets/Label.hpp"
 #include "MsgDialog.hpp"
+#include "GUI_App.hpp"
 
 #include "DeviceCore/DevFilaSystem.h"
 
@@ -470,7 +471,7 @@ void CaliPageCaption::create_wiki(wxWindow* parent)
     m_wiki_text = new HyperLink(parent, _L("Wiki Guide"));
     m_wiki_text->Bind(wxEVT_LEFT_UP, [this](wxMouseEvent& e) {
         if (!m_wiki_url.empty())
-            wxLaunchDefaultBrowser(m_wiki_url);
+            wxGetApp().open_browser_with_warning_dialog(m_wiki_url);
     });
 }
 

@@ -347,7 +347,7 @@ void GuideFrame::OnNewWindow(wxWebViewEvent &evt)
     wxString flag = " (other)";
 
     wxString NewUrl= evt.GetURL();
-    wxLaunchDefaultBrowser(NewUrl);
+    wxGetApp().open_browser_with_warning_dialog(NewUrl);
     //if (evt.GetNavigationAction() == wxWEBVIEW_NAV_ACTION_USER) { flag = " (user)"; }
     // wxLogMessage("%s", "New window; url='" + evt.GetURL() + "'" + flag);
 
@@ -541,16 +541,16 @@ void GuideFrame::OnScriptMessage(wxWebViewEvent &evt)
             m_Region = j["region"];
         }
         else if (strCmd == "network_plugin_install") {
-            std::string sAction = j["data"]["action"];
+            const bool requested = j["data"]["action"] == "yes";
+            InstallNetplugin = requested && !network_plugin_ready;
 
-            if (sAction == "yes") {
-                if (!network_plugin_ready)
-                    InstallNetplugin = true;
-                else //already ready
-                    InstallNetplugin = false;
+            // "installed_networking" means a usable component, not merely consent.
+            // Keep the opt-in local until download, installation and runtime setup all
+            // succeed. A failed or cancelled attempt must not trigger work on startup.
+            if (wxGetApp().app_config && (!requested || network_plugin_ready)) {
+                wxGetApp().app_config->set_bool("installed_networking", requested && network_plugin_ready);
+                wxGetApp().app_config->save();
             }
-            else
-                InstallNetplugin = false;
         }
         else if (strCmd == "save_stealth_mode") {
             wxString strAction = j["data"]["action"];
@@ -1569,8 +1569,7 @@ int GuideFrame::DownloadPlugin()
         "plugins", "network_plugin.zip",
         [this](int status, int percent, bool& cancel) {
             return ShowPluginStatus(status, percent, cancel);
-        }
-    , nullptr);
+        }, nullptr, &m_downloaded_plugin_version);
 }
 
 int GuideFrame::InstallPlugin()
@@ -1578,8 +1577,7 @@ int GuideFrame::InstallPlugin()
     return wxGetApp().install_plugin("plugins", "network_plugin.zip",
         [this](int status, int percent, bool &cancel) {
             return ShowPluginStatus(status, percent, cancel);
-        }
-    );
+        }, nullptr, m_downloaded_plugin_version);
 }
 
 int GuideFrame::ShowPluginStatus(int status, int percent, bool& cancel)

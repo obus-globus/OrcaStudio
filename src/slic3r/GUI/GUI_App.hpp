@@ -29,6 +29,7 @@
 #include <wx/snglinst.h>
 #include <wx/msgdlg.h>
 
+#include <chrono>
 #include <mutex>
 #include <stack>
 
@@ -336,6 +337,9 @@ private:
     bool             m_show_http_error_msgdlg{false};
     std::chrono::steady_clock::time_point m_last_401_error_time;
     bool             m_show_error_msgdlg{false};
+    std::mutex       m_bmcu_auto_retry_mutex;
+    std::string      m_bmcu_auto_retry_dev_id;
+    std::chrono::steady_clock::time_point m_bmcu_auto_retry_until{};
     wxString         m_info_dialog_content;
     HttpServer       m_http_server;
     bool             m_show_gcode_window{true};
@@ -509,7 +513,7 @@ public:
     void            on_update_machine_list(wxCommandEvent& evt);
     void            on_user_login(wxCommandEvent &evt);
     void            on_user_login_handle(wxCommandEvent& evt);
-    void            enable_user_preset_folder(bool enable);
+    void            enable_user_preset_folder(bool enable, const std::string& provider = ORCA_CLOUD_PROVIDER);
 
     // BBS
     bool            is_studio_active();
@@ -521,6 +525,9 @@ public:
     void            check_new_version(bool show_tips = false, int by_user = 0);
     void            check_new_version_sf(bool show_tips = false, int by_user = 0);
     bool            process_network_msg(std::string dev_id, std::string msg);
+    void            begin_bmcu_auto_retry(const std::string& dev_id, int timeout_ms = 25000);
+    void            finish_bmcu_auto_retry(const std::string& dev_id = std::string());
+    bool            is_bmcu_auto_retry_active(const std::string& dev_id = std::string());
     void            request_new_version(int by_user);
     void            enter_force_upgrade();
     void            set_skip_version(bool skip = true);
@@ -529,7 +536,7 @@ public:
     std::string     format_IP(const std::string& ip);
     void            show_dialog(wxString msg);
     void            push_notification(const MachineObject* obj, wxString msg, wxString title = wxEmptyString, UserNotificationStyle style = UserNotificationStyle::UNS_NORMAL);
-    void            reload_settings();
+    void            reload_settings(const std::string& provider = ORCA_CLOUD_PROVIDER);
     void            remove_user_presets();
 
     bool            maybe_migrate_user_presets_on_login();
@@ -539,10 +546,10 @@ public:
     void            add_pending_vendor_preset(const std::pair<std::string, std::map<std::string, std::string>>& preset_data);
     void            load_pending_vendors();
 
-    void            sync_preset(Preset* preset, bool force = false);
-    void            start_sync_user_preset(bool with_progress_dlg = false);
+    void            sync_preset(Preset* preset, bool force = false, const std::string& provider = ORCA_CLOUD_PROVIDER);
+    void            start_sync_user_preset(bool with_progress_dlg = false, const std::string& provider = ORCA_CLOUD_PROVIDER);
     void            stop_sync_user_preset();
-    void            restart_sync_user_preset();
+    void            restart_sync_user_preset(const std::string& provider = ORCA_CLOUD_PROVIDER);
     // Resolve a cloud sync 409 by force-pushing the conflicting preset: clears the "hold"
     // state the conflict left behind and queues it to be re-uploaded with force=true.
     void            force_push_conflicting_preset(const std::string& setting_id);
@@ -613,7 +620,7 @@ public:
     void            load_current_presets(bool active_preset_combox = false, bool check_printer_presets = true);
     std::map<std::string, std::string> &get_delete_cache_presets();
     std::map<std::string, std::string> get_delete_cache_presets_lock();
-    void            process_delete_presets();
+    void            process_delete_presets(const std::string& provider = ORCA_CLOUD_PROVIDER);
     void            delete_preset_from_cloud(std::string setting_id, std::string preset_file_path);
     void            preset_deleted_from_cloud(std::string setting_id);
     void            scan_orphaned_info_files();
@@ -635,6 +642,8 @@ public:
     virtual bool OnExceptionInMainLoop() override;
     // Calls wxLaunchDefaultBrowser if user confirms in dialog.
     bool            open_browser_with_warning_dialog(const wxString& url, int flags = 0);
+    bool            is_bambu_web_url(const wxString& url) const;
+    bool            open_bambu_web_page(const wxString& url, bool bind_ticket = false);
 #ifdef __APPLE__
     void            OSXStoreOpenFiles(const wxArrayString &files);
     // wxWidgets override to get an event on open files.
@@ -752,8 +761,9 @@ public:
     void            start_download(std::string url);
 
     std::string     get_plugin_url(std::string name, std::string country_code);
-    int             download_plugin(std::string name, std::string package_name, InstallProgressFn pro_fn = nullptr, WasCancelledFn cancel_fn = nullptr);
-    int             install_plugin(std::string name, std::string package_name, InstallProgressFn pro_fn = nullptr, WasCancelledFn cancel_fn = nullptr);
+    int             download_plugin(std::string name, std::string package_name, InstallProgressFn pro_fn = nullptr, WasCancelledFn cancel_fn = nullptr, std::string* downloaded_version = nullptr);
+    int             install_plugin(std::string name, std::string package_name, InstallProgressFn pro_fn = nullptr, WasCancelledFn cancel_fn = nullptr, const std::string& package_version = {});
+    bool            rollback_network_plugin_payload(std::string* error = nullptr);
     std::string     get_http_url(std::string country_code, std::string path = {});
     std::string     get_model_http_url(std::string country_code);
     bool            use_legacy_network_plugin() const;
@@ -773,7 +783,6 @@ public:
     std::string     get_latest_network_version() const;
     bool            has_network_update_available() const;
     // Orca: return the client version to report to Bambu servers. Pinned to
-    // 01.10.01.50 when the legacy network plugin lacks get_my_token support
     // so the auth server stays on the ?access_token= redirect path.
     std::string     get_bbl_client_version();
 

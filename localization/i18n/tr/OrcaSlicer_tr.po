@@ -20261,6 +20261,9 @@ msgstr "Yüklenecek sürüm:"
 msgid "Download and Install"
 msgstr "İndirin ve Yükleyin"
 
+msgid "Skip for Now"
+msgstr "Şimdilik Atla"
+
 msgid "A new version of the Bambu Network Plug-in is available."
 msgstr "Bambu Ağ Eklentisinin yeni bir sürümü mevcut."
 
@@ -20277,6 +20280,12 @@ msgstr "Bir daha sorma"
 msgid "Update Now"
 msgstr "Şimdi Güncelle"
 
+msgid "Remind Later"
+msgstr "Daha Sonra Hatırlat"
+
+msgid "Skip Version"
+msgstr "Sürümü Atla"
+
 msgid "(Latest)"
 msgstr "(En sonuncu)"
 
@@ -20291,6 +20300,9 @@ msgstr "Yeni eklentiyi yüklemek için yeniden başlatma gerekiyor. Şimdi yenid
 
 msgid "Restart Now"
 msgstr "Şimdi Yeniden Başlat"
+
+msgid "Restart Later"
+msgstr "Daha Sonra Yeniden Başlat"
 
 msgid "NO RAMMING AT ALL"
 msgstr "HİÇBİR ŞEKİLDE ÇARPMA YOK"
@@ -20895,18 +20907,6 @@ msgstr ""
 
 #~ msgid "Hotend"
 #~ msgstr "Hotend"
-
-#~ msgid "Skip for Now"
-#~ msgstr "Şimdilik Atla"
-
-#~ msgid "Remind Later"
-#~ msgstr "Daha Sonra Hatırlat"
-
-#~ msgid "Skip Version"
-#~ msgstr "Sürümü Atla"
-
-#~ msgid "Restart Later"
-#~ msgstr "Daha Sonra Yeniden Başlat"
 
 #~ msgid "Select filament that installed to the left nozzle"
 #~ msgstr "Sol nozüle takılan filamanı seçin"

@@ -10,12 +10,12 @@
 
 #include "wx/uri.h"
 #include "wx/mediactrl.h"
+#include <chrono>
 
 wxDECLARE_EVENT(EVT_MEDIA_CTRL_STAT, wxCommandEvent);
+wxDECLARE_EVENT(EVT_MEDIA_CTRL_FIRST_FRAME, wxCommandEvent);
 
-#if defined(__LINUX__) && defined(__WXGTK__)
-typedef struct _GstElement GstElement;
-#endif
+void wxMediaCtrl_OnSize(wxWindow * ctrl, wxSize const & videoSize, int width, int height);
 
 #ifdef __WXMAC__
 
@@ -23,16 +23,17 @@ class wxMediaCtrl2 : public wxWindow
 {
 public:
     wxMediaCtrl2(wxWindow * parent);
-    
+
     ~wxMediaCtrl2();
 
-    void Load(wxURI url);
+    void Load(wxURI url, std::chrono::system_clock::time_point play_start_time = {});
 
     void Play();
 
     void Stop();
 
-    void SetIdleImage(wxString const & image);
+    void SetIdleImage(wxString const & image, wxString const & watermark_text = {});
+    void SetIdleImage(const wxImage &image, wxString const & watermark_text = {});
 
     wxMediaState GetState() const;
 
@@ -40,21 +41,35 @@ public:
 
     int GetLastError() const { return m_error; }
 
+    void SetConstrainByAspectRatio(bool constrain) { m_constrain_by_aspect_ratio = constrain; }
+    bool GetConstrainByAspectRatio() const { return m_constrain_by_aspect_ratio; }
+
     static inline const wxMediaState MEDIASTATE_BUFFERING = static_cast<wxMediaState>(6);
 
 protected:
     void DoSetSize(int x, int y, int width, int height, int sizeFlags) override;
 
-    static void bambu_log(void const * ctx, int level, char const * msg);
-    
+    static void bambu_log(void const *ctx, int level, char const *msg);
+
     void NotifyStopped();
 
 private:
     void create_player();
+    void updateIdleLayer();
+    void updateWatermarkLayer();
+    void removeIdleLayer();
+
     void * m_player = nullptr;
     wxMediaState m_state = wxMEDIASTATE_STOPPED;
     int          m_error  = 0;
     wxSize       m_video_size{16, 9};
+    bool         m_constrain_by_aspect_ratio{true};
+
+    wxString m_idle_image;
+    wxString m_watermark_text;
+    void *   m_idle_layer = nullptr;      // CALayer* for idle image
+    void *   m_watermark_layer = nullptr;  // CATextLayer* for watermark
+    std::chrono::system_clock::time_point m_play_start_time;
 };
 
 #else
@@ -63,7 +78,6 @@ class wxMediaCtrl2 : public wxMediaCtrl
 {
 public:
     wxMediaCtrl2(wxWindow *parent);
-    ~wxMediaCtrl2();
 
     void Load(wxURI url);
 
@@ -71,13 +85,15 @@ public:
 
     void Stop();
 
-    void SetIdleImage(wxString const & image);
-
-    wxMediaState GetState();
+    void SetIdleImage(wxString const & image, wxString const & watermark_text = {});
+    void SetIdleImage(const wxImage &image, wxString const & watermark_text = {});
 
     int GetLastError() const;
 
     wxSize GetVideoSize() const;
+
+    void SetConstrainByAspectRatio(bool constrain) { m_constrain_by_aspect_ratio = constrain; }
+    bool GetConstrainByAspectRatio() const { return m_constrain_by_aspect_ratio; }
 
 protected:
     wxSize DoGetBestSize() const override;
@@ -91,25 +107,11 @@ protected:
 #endif
 
 private:
-#if defined(__LINUX__) && defined(__WXGTK__)
-    bool CreateGtkSinkPlayer();
-    void DestroyGtkSinkPlayer();
-    void PostGtkSinkStateEvent(int id = 0);
-
-    bool m_native_wayland = false;
-    bool m_use_gtk_sink = false;
-    wxString m_gtk_sink_error;
-    bool m_gtk_sink_error_notified = false;
-    GstElement *m_gtk_playbin = nullptr;
-    GstElement *m_gtk_sink = nullptr;
-    unsigned int m_gtk_bus_watch_id = 0;
-    wxWindow *m_gtk_video_window = nullptr;
-    wxMediaState m_gtk_state = wxMEDIASTATE_STOPPED;
-#endif
     wxString m_idle_image;
     int      m_error = 0;
     bool     m_loaded = false;
     wxSize   m_video_size{16, 9};
+    bool     m_constrain_by_aspect_ratio{true};
 };
 
 #endif

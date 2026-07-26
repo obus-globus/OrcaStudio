@@ -132,6 +132,24 @@ namespace Slic3r
         }
     }
 
+    void DeviceManager::set_auto_retry_print_ui_callback(std::function<bool(const std::string&)> callback)
+    {
+        std::lock_guard<std::mutex> lock(autoRetryPrintUiCallbackMutex);
+        m_auto_retry_print_ui_callback = std::move(callback);
+    }
+
+    bool DeviceManager::trigger_auto_retry_print_ui_callback(const std::string& dev_id)
+    {
+        std::function<bool(const std::string&)> callback;
+        {
+            std::lock_guard<std::mutex> lock(autoRetryPrintUiCallbackMutex);
+            callback = m_auto_retry_print_ui_callback;
+        }
+        if (!callback)
+            return false;
+        return callback(dev_id);
+    }
+
     void DeviceManager::EnableMultiMachine(bool enable)
     {
         m_agent->enable_multi_machine(enable);
@@ -772,7 +790,7 @@ namespace Slic3r
                     }
                     else
                     {
-                        obj = new MachineObject(this, m_agent, "", "", "");
+                        obj = new MachineObject(this, m_agent, "", dev_id, "");
                         if (m_agent)
                         {
                             obj->set_bind_status(m_agent->get_user_name(provider));
@@ -878,15 +896,16 @@ namespace Slic3r
 
     void DeviceManager::load_last_machine()
     {
-        if (userMachineList.empty()) return;
-        else if (userMachineList.size() == 1) {
-            this->set_selected_machine(userMachineList.begin()->second->get_dev_id());
+        const auto all_machines = get_my_machine_list();
+        if (all_machines.empty()) return;
+        if (all_machines.size() == 1) {
+            this->set_selected_machine(all_machines.begin()->second->get_dev_id());
         } else {
             const auto& last_monitor_machine = get_user_last_machine();
-            if (userMachineList.find(last_monitor_machine) != userMachineList.end()) {
+            if (all_machines.find(last_monitor_machine) != all_machines.end()) {
                 set_selected_machine(last_monitor_machine);
             } else {
-                this->set_selected_machine(userMachineList.begin()->second->get_dev_id());
+                this->set_selected_machine(all_machines.begin()->second->get_dev_id());
             }
         }
     }
@@ -982,13 +1001,17 @@ namespace Slic3r
         }
 
         // certificate
-        try {
-            agent->install_device_cert(obj->get_dev_id(), obj->is_lan_mode_printer());
-        } catch (const std::exception& e) {
-            BOOST_LOG_TRIVIAL(error) << "DeviceManagerRefresher::on_timer install_device_cert exception="
-                                     << e.what();
-        } catch (...) {
-            BOOST_LOG_TRIVIAL(error) << "DeviceManagerRefresher::on_timer install_device_cert unknown exception";
+        if (!Slic3r::GUI::wxGetApp().is_bmcu_auto_retry_active(obj->get_dev_id())) {
+            try {
+                agent->install_device_cert(obj->get_dev_id(), obj->is_lan_mode_printer());
+            } catch (const std::exception& e) {
+                BOOST_LOG_TRIVIAL(error) << "DeviceManagerRefresher::on_timer install_device_cert exception="
+                                         << e.what();
+            } catch (...) {
+                BOOST_LOG_TRIVIAL(error) << "DeviceManagerRefresher::on_timer install_device_cert unknown exception";
+            }
+        } else {
+            BOOST_LOG_TRIVIAL(info) << "DeviceManagerRefresher::on_timer skip install_device_cert during BMCU auto retry, dev_id=" << obj->get_dev_id();
         }
     }
 }

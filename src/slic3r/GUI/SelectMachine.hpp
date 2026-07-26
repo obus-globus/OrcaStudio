@@ -25,6 +25,8 @@
 #include <wx/srchctrl.h>
 
 #include <unordered_map>
+#include <chrono>
+#include <memory>
 
 #include "boost/bimap/bimap.hpp"
 #include "AmsMappingPopup.hpp"
@@ -301,6 +303,14 @@ private:
     int                                 m_timeout_count{0};
     int                                 m_print_error_code{0};
     bool                                m_is_in_sending_mode{ false };
+    bool                                m_is_auto_retry_0500_409d_invoke{ false };
+    bool                                m_auto_retry_0500_409d_pending{ false };
+    bool                                m_auto_retry_0500_409d_exhausted{ false };
+    int                                 m_auto_retry_0500_409d_attempts{ 0 };
+    int                                 m_auto_retry_0500_409d_ready_checks{ 0 };
+    int                                 m_auto_retry_0500_409d_wait_left{ 0 };
+    std::string                         m_auto_retry_0500_409d_dev_id;
+    std::unique_ptr<wxTimer>            m_auto_retry_0500_409d_timer{ nullptr };
     bool                                m_ams_mapping_res{ false };
     bool                                m_ams_mapping_valid{ false };
     bool                                m_export_3mf_cancel{ false };
@@ -505,6 +515,10 @@ public:
     void set_default_from_sdcard();
     void update_page_turn_state(bool show);
     void on_timer(wxTimerEvent& event);
+    void schedule_auto_retry_0500_409d(const std::string& dev_id);
+    void on_auto_retry_0500_409d_timer(wxTimerEvent& event);
+    bool is_auto_retry_0500_409d_ready();
+    void stop_auto_retry_0500_409d(bool clear_guard);
     void on_selection_changed(wxCommandEvent &event);
     void Enable_Refresh_Button(bool en);
     void Enable_Send_Button(bool en);

@@ -1,6 +1,7 @@
 #include "WebView.hpp"
 #include "slic3r/GUI/GUI_App.hpp"
 #include "slic3r/Utils/MacDarkMode.hpp"
+#include "slic3r/Utils/SlicerLinuxRuntime/SlicerLinuxRuntimeConfig.hpp"
 
 #include <boost/log/trivial.hpp>
 
@@ -375,6 +376,10 @@ bool WebView::DownloadAndInstallWebViewRuntime()
 #endif
 void WebView::LoadUrl(wxWebView * webView, wxString const &url)
 {
+    if (Slic3r::SlicerLinuxRuntime::use_linux_runtime() && Slic3r::GUI::wxGetApp().is_bambu_web_url(url)) {
+        Slic3r::GUI::wxGetApp().open_bambu_web_page(url);
+        return;
+    }
     auto url2  = url;
 #ifdef __WIN32__
     url2.Replace("\\", "/");

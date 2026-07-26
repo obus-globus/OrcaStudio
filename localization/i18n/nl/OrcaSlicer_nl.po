@@ -19766,6 +19766,9 @@ msgstr ""
 msgid "Download and Install"
 msgstr ""
 
+msgid "Skip for Now"
+msgstr ""
+
 msgid "A new version of the Bambu Network Plug-in is available."
 msgstr ""
 
@@ -19782,6 +19785,12 @@ msgstr ""
 msgid "Update Now"
 msgstr ""
 
+msgid "Remind Later"
+msgstr ""
+
+msgid "Skip Version"
+msgstr ""
+
 msgid "(Latest)"
 msgstr ""
 
@@ -19795,6 +19804,9 @@ msgid "A restart is required to load the new plug-in. Would you like to restart 
 msgstr ""
 
 msgid "Restart Now"
+msgstr ""
+
+msgid "Restart Later"
 msgstr ""
 
 msgid "NO RAMMING AT ALL"

@@ -9,6 +9,8 @@
 #include "DownloadProgressDialog.hpp"
 #include "slic3r/Utils/BBLNetworkPlugin.hpp"
 
+#include <cstring>
+
 
 #include <boost/lexical_cast.hpp>
 #include <boost/log/trivial.hpp>
@@ -26,6 +28,8 @@
 #include <wx/clipbrd.h>
 #include "wx/evtloop.h"
 
+wxDEFINE_EVENT(EVT_MEDIA_CTRL_FIRST_FRAME, wxCommandEvent);
+
 static std::map<int, std::string> error_messages = {
     {1, L("The device cannot handle more conversations. Please retry later.")},
     {2, L("Player is malfunctioning. Please reinstall the system player.")},
@@ -36,10 +40,51 @@ static std::map<int, std::string> error_messages = {
     {104, L("The player is not loaded because the GStreamer GTK video sink is missing or failed to initialize.")}
 };
 
+
+static bool media_url_has_param(const std::string& url, const std::string& key)
+{
+    return url.find("?" + key + "=") != std::string::npos || url.find("&" + key + "=") != std::string::npos;
+}
+
+static std::string media_url_kind_for_log(const std::string& url)
+{
+    constexpr const char* prefix = "bambu:///";
+    if (url.rfind(prefix, 0) != 0)
+        return "unknown";
+
+    const std::size_t start = std::strlen(prefix);
+    if (start >= url.size())
+        return "root";
+
+    if (url.compare(start, 4, "tutk") == 0)
+        return "tutk";
+    if (url.compare(start, 7, "rtsp___") == 0)
+        return "rtsp";
+    if (url.compare(start, 8, "local___") == 0)
+        return "local";
+    return "other";
+}
+
+static std::string media_url_summary_for_log(const std::string& url)
+{
+    const std::string kind = media_url_kind_for_log(url);
+    return "camera_url{len=" + std::to_string(url.size()) +
+           ",is_bambu=" + (url.rfind("bambu:///", 0) == 0 ? "1" : "0") +
+           ",kind=" + kind +
+           ",has_uid=" + (media_url_has_param(url, "uid") ? "1" : "0") +
+           ",has_authkey=" + (media_url_has_param(url, "authkey") ? "1" : "0") +
+           ",has_passwd=" + (media_url_has_param(url, "passwd") ? "1" : "0") +
+           ",has_license=" + (media_url_has_param(url, "license") ? "1" : "0") +
+           ",has_token=" + (media_url_has_param(url, "token") ? "1" : "0") +
+           ",has_device=" + (media_url_has_param(url, "device") ? "1" : "0") +
+           ",has_refresh_url=" + (media_url_has_param(url, "refresh_url") ? "1" : "0") +
+           "}";
+}
+
 namespace Slic3r {
 namespace GUI {
 
-MediaPlayCtrl::MediaPlayCtrl(wxWindow *parent, wxMediaCtrl2 *media_ctrl, const wxPoint &pos, const wxSize &size)
+MediaPlayCtrl::MediaPlayCtrl(wxWindow *parent, BBLMediaCtrl *media_ctrl, const wxPoint &pos, const wxSize &size)
     : wxPanel(parent, wxID_ANY, pos, size)
     , m_media_ctrl(media_ctrl)
 {
@@ -297,7 +342,7 @@ void MediaPlayCtrl::Play()
         url += "&dev_ver=" + m_dev_ver;
         url += "&cli_id=" + wxGetApp().app_config->get("slicer_uuid");
         url += "&cli_ver=" + std::string(SLIC3R_VERSION);
-        BOOST_LOG_TRIVIAL(info) << "MediaPlayCtrl: " << hide_passwd(hide_id_middle_string(url, url.find(m_lan_ip), m_lan_ip.length()), {m_lan_passwd});
+        BOOST_LOG_TRIVIAL(info) << "MediaPlayCtrl: " << media_url_summary_for_log(url);
         m_url = url;
         load();
         m_button_play->SetIcon("media_stop");
@@ -351,8 +396,7 @@ void MediaPlayCtrl::Play()
                 url += "&cli_id=" + wxGetApp().app_config->get("slicer_uuid");
                 url += "&cli_ver=" + std::string(SLIC3R_VERSION);
             }
-            BOOST_LOG_TRIVIAL(info) << "MediaPlayCtrl: " << hide_passwd(url, 
-                    {"?uid=", "authkey=", "passwd=", "license=", "token="});
+            BOOST_LOG_TRIVIAL(info) << "MediaPlayCtrl: " << media_url_summary_for_log(url);
             CallAfter([this, m, url] {
                 if (m != m_machine) {
                     BOOST_LOG_TRIVIAL(info) << "MediaPlayCtrl drop late ttcode for machine: " << m;
@@ -538,7 +582,7 @@ void MediaPlayCtrl::ToggleStream()
             url = "bambu:///rtsp___" + m_lan_user + ":" + m_lan_passwd + "@" + m_lan_ip + "/streaming/live/1?proto=rtsp";
         url += "&device=" + into_u8(m_machine);
         url += "&dev_ver=" + m_dev_ver;
-        BOOST_LOG_TRIVIAL(info) << "MediaPlayCtrl::ToggleStream: " << hide_passwd(hide_id_middle_string(url, url.find(m_lan_ip), m_lan_ip.length()), {m_lan_passwd});
+        BOOST_LOG_TRIVIAL(info) << "MediaPlayCtrl::ToggleStream: " << media_url_summary_for_log(url);
         std::string             file_url = data_dir() + "/cameratools/url.txt";
         boost::nowide::ofstream file(file_url);
         auto                    url2 = encode_path(url.c_str());
@@ -560,8 +604,7 @@ void MediaPlayCtrl::ToggleStream()
             url += "&cli_id=" + wxGetApp().app_config->get("slicer_uuid");
             url += "&cli_ver=" + std::string(SLIC3R_VERSION);
         }
-        BOOST_LOG_TRIVIAL(info) << "MediaPlayCtrl::ToggleStream: " << hide_passwd(url, 
-                {"?uid=", "authkey=", "passwd=", "license=", "token="});
+        BOOST_LOG_TRIVIAL(info) << "MediaPlayCtrl::ToggleStream: " << media_url_summary_for_log(url);
         CallAfter([this, m, url] {
             if (m != m_machine) return;
             if (url.empty() || !boost::algorithm::starts_with(url, "bambu:///")) {
@@ -662,6 +705,45 @@ void MediaPlayCtrl::SetStatus(wxString const &msg2, bool hyperlink)
 
 bool MediaPlayCtrl::IsStreaming() const { return m_streaming; }
 
+bool MediaPlayCtrl::stop_for_network_reload(int timeout_ms)
+{
+    Stop(" ");
+    {
+        boost::unique_lock lock(m_mutex);
+        m_reload_barrier_done = false;
+        m_tasks.push_back("<stop>");
+        m_tasks.push_back("<reload>");
+        m_cond.notify_all();
+    }
+
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(timeout_ms);
+    while (std::chrono::steady_clock::now() < deadline) {
+        {
+            boost::unique_lock lock(m_mutex);
+            if (m_reload_barrier_done)
+                break;
+        }
+        if (wxTheApp)
+            wxTheApp->ProcessPendingEvents();
+        wxMilliSleep(10);
+    }
+
+    {
+        boost::unique_lock lock(m_mutex);
+        if (!m_reload_barrier_done)
+            return false;
+    }
+
+    while (std::chrono::steady_clock::now() < deadline) {
+        if (NetworkAgent::active_source_tunnels() == 0)
+            return true;
+        if (wxTheApp)
+            wxTheApp->ProcessPendingEvents();
+        wxMilliSleep(10);
+    }
+    return NetworkAgent::active_source_tunnels() == 0;
+}
+
 void MediaPlayCtrl::load()
 {
     m_last_state = MEDIASTATE_LOADING;
@@ -700,7 +782,7 @@ void MediaPlayCtrl::media_proc()
         }
         wxString url = m_tasks.front();
         if (m_tasks.size() >= 2 && !url.IsEmpty() && url[0] != '<' && m_tasks[1] == "<stop>") {
-            BOOST_LOG_TRIVIAL(trace) << "MediaPlayCtrl: busy skip url: " << url;
+            BOOST_LOG_TRIVIAL(trace) << "MediaPlayCtrl: busy skip url: " << media_url_summary_for_log(into_u8(url));
             m_tasks.pop_front();
             m_tasks.pop_front();
             continue;
@@ -717,13 +799,25 @@ void MediaPlayCtrl::media_proc()
         else if (url == "<play>") {
             m_media_ctrl->Play();
         }
+        else if (url == "<reload>") {
+        }
         else {
             BOOST_LOG_TRIVIAL(info) <<  "MediaPlayCtrl: start load";
-            m_media_ctrl->Load(wxURI(url));
+#if defined(__WXMAC__) || defined(__APPLE__)
+            if (url.StartsWith("bambu:///"))
+                m_media_ctrl->LoadRaw(url);
+            else
+#endif
+                m_media_ctrl->Load(wxURI(url));
             BOOST_LOG_TRIVIAL(info) << "MediaPlayCtrl: end load";
         }
         lock.lock();
         m_tasks.pop_front();
+        if (url == "<reload>") {
+            m_reload_barrier_done = true;
+            m_cond.notify_all();
+            continue;
+        }
         wxMediaEvent theEvent(wxEVT_MEDIA_STATECHANGED, m_media_ctrl->GetId());
         theEvent.SetId(0);
         m_media_ctrl->GetEventHandler()->AddPendingEvent(theEvent);
@@ -830,27 +924,16 @@ bool MediaPlayCtrl::get_stream_url(std::string *url)
 
 }}
 
-void wxMediaCtrl2::DoSetSize(int x, int y, int width, int height, int sizeFlags)
+void wxMediaCtrl_OnSize(wxWindow *ctrl, wxSize const &videoSize, int width, int height)
 {
-#ifdef __WXMAC__
-    wxWindow::DoSetSize(x, y, width, height, sizeFlags);
-#else
-    wxMediaCtrl::DoSetSize(x, y, width, height, sizeFlags);
-#endif
-#if defined(__LINUX__) && defined(__WXGTK__)
-    if (m_gtk_video_window) {
-        const wxSize client_size = GetClientSize();
-        m_gtk_video_window->SetSize(0, 0, client_size.GetWidth(), client_size.GetHeight());
-    }
-#endif
-    if (sizeFlags & wxSIZE_USE_EXISTING) return;
-    wxSize size = m_video_size;
+    wxSize size = videoSize;
+    if (!size.IsFullySpecified())
+        size = {16, 9};
     int maxHeight = (width * size.GetHeight() + size.GetHeight() - 1) / size.GetWidth();
-    if (maxHeight != GetMaxHeight()) {
-        // BOOST_LOG_TRIVIAL(info) << "wxMediaCtrl2::DoSetSize: width: " << width << ", height: " << height << ", maxHeight: " << maxHeight;
-        SetMaxSize({-1, maxHeight});
-        CallAfter([this] {
-            if (auto p = GetParent()) {
+    if (maxHeight != ctrl->GetMaxHeight()) {
+        ctrl->SetMaxSize({-1, maxHeight});
+        ctrl->CallAfter([ctrl] {
+            if (auto p = ctrl->GetParent()) {
                 p->Layout();
                 p->Refresh();
             }

@@ -142,7 +142,7 @@ TroubleshootDialog::TroubleshootDialog()
     auto hash_url = "https://github.com/OrcaSlicer/OrcaSlicer/commit/" + wxString(GIT_COMMIT_HASH);
     build->SetToolTip(hash_url);
     build->Bind(wxEVT_BUTTON, [hash_url](wxCommandEvent &e) {
-         wxLaunchDefaultBrowser(hash_url);
+         wxGetApp().open_browser_with_warning_dialog(hash_url);
     });
 
     // SYSTEM INFO
@@ -254,7 +254,7 @@ TroubleshootDialog::TroubleshootDialog()
             url += "&os_type=%22" + os +"%22";
         url += "&version="     + encodeStr(wxString(SoftFever_VERSION));
         url += "&os_version="  + encodeStr(GetOSinfo());
-        wxLaunchDefaultBrowser(url);
+        wxGetApp().open_browser_with_warning_dialog(url);
     });
 
     auto pack_btn = new Button(this, _L("Pack") + "...");

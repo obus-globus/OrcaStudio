@@ -19981,6 +19981,9 @@ msgstr "เวอร์ชันที่จะติดตั้ง:"
 msgid "Download and Install"
 msgstr "ดาวน์โหลดและติดตั้ง"
 
+msgid "Skip for Now"
+msgstr "ข้ามไปก่อน"
+
 msgid "A new version of the Bambu Network Plug-in is available."
 msgstr "ปลั๊กอิน Bambu Network Plug-in เวอร์ชันใหม่พร้อมใช้งานแล้ว"
 
@@ -19997,6 +20000,12 @@ msgstr "อย่าถามอีก"
 msgid "Update Now"
 msgstr "อัปเดตตอนนี้"
 
+msgid "Remind Later"
+msgstr "เตือนทีหลัง"
+
+msgid "Skip Version"
+msgstr "ข้ามเวอร์ชัน"
+
 msgid "(Latest)"
 msgstr "(ล่าสุด)"
 
@@ -20011,6 +20020,9 @@ msgstr "จำเป็นต้องรีสตาร์ทเพื่อโ
 
 msgid "Restart Now"
 msgstr "เริ่มใหม่ตอนนี้"
+
+msgid "Restart Later"
+msgstr "เริ่มใหม่ภายหลัง"
 
 msgid "NO RAMMING AT ALL"
 msgstr "ไม่มีการกระแทกเลย"
@@ -20620,18 +20632,6 @@ msgstr ""
 
 #~ msgid "Hotend"
 #~ msgstr "ฮอตเอนด์"
-
-#~ msgid "Skip for Now"
-#~ msgstr "ข้ามไปก่อน"
-
-#~ msgid "Remind Later"
-#~ msgstr "เตือนทีหลัง"
-
-#~ msgid "Skip Version"
-#~ msgstr "ข้ามเวอร์ชัน"
-
-#~ msgid "Restart Later"
-#~ msgstr "เริ่มใหม่ภายหลัง"
 
 #~ msgid "Select filament that installed to the left nozzle"
 #~ msgstr "เลือกเส้นพลาสติกที่ติดตั้งไว้ที่หัวฉีดด้านซ้าย"

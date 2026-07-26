@@ -19834,6 +19834,9 @@ msgstr "インストールするバージョン:"
 msgid "Download and Install"
 msgstr "ダウンロードしてインストール"
 
+msgid "Skip for Now"
+msgstr "今はスキップ"
+
 msgid "A new version of the Bambu Network Plug-in is available."
 msgstr "Bambuネットワークプラグインの新しいバージョンが利用可能です。"
 
@@ -19850,6 +19853,12 @@ msgstr "今後は確認しない"
 msgid "Update Now"
 msgstr "今すぐアップデート"
 
+msgid "Remind Later"
+msgstr "後で通知"
+
+msgid "Skip Version"
+msgstr "バージョンをスキップ"
+
 msgid "(Latest)"
 msgstr "（最新）"
 
@@ -19864,6 +19873,9 @@ msgstr "新しいプラグインをロードするには再起動が必要です
 
 msgid "Restart Now"
 msgstr "今すぐ再起動"
+
+msgid "Restart Later"
+msgstr "後で再起動"
 
 msgid "NO RAMMING AT ALL"
 msgstr "ラミングなし"
@@ -20442,18 +20454,6 @@ msgstr ""
 
 #~ msgid "Hotend"
 #~ msgstr "ホットエンド"
-
-#~ msgid "Skip for Now"
-#~ msgstr "今はスキップ"
-
-#~ msgid "Remind Later"
-#~ msgstr "後で通知"
-
-#~ msgid "Skip Version"
-#~ msgstr "バージョンをスキップ"
-
-#~ msgid "Restart Later"
-#~ msgstr "後で再起動"
 
 #~ msgid "Select filament that installed to the left nozzle"
 #~ msgstr "左ノズルに取り付けたフィラメントを選択"

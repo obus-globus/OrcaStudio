@@ -5,6 +5,7 @@
 #include "Plater.hpp"
 #include "Widgets/Button.hpp"
 #include "Widgets/SwitchButton.hpp"
+#include "Widgets/TabCtrl.hpp"
 #include "Widgets/Label.hpp"
 #include "Printer/PrinterFileSystem.h"
 #include "MsgDialog.hpp"
@@ -12,6 +13,9 @@
 #include <libslic3r/Model.hpp>
 #include <libslic3r/Format/bbs_3mf.hpp>
 #include "DeviceCore/DevStorage.h"
+
+#include <functional>
+#include <memory>
 
 #ifdef __WXMSW__
 #include <shellapi.h>
@@ -83,7 +87,7 @@ MediaFilePanel::MediaFilePanel(wxWindow * parent)
     m_button_video = new ::Button(m_type_panel, _L("Video"), "", wxBORDER_NONE);
     m_button_video->SetToolTip(_L("Switch to video files."));
     m_button_model = new ::Button(m_type_panel, _L("Model"), "", wxBORDER_NONE);
-    m_button_video->SetToolTip(_L("Switch to 3MF model files."));
+    m_button_model->SetToolTip(_L("Switch to 3MF model files."));
     for (auto b : {m_button_timelapse, m_button_video, m_button_model}) {
         b->SetBackgroundColor(background);
         b->SetCanFocus(false);
@@ -136,6 +140,22 @@ MediaFilePanel::MediaFilePanel(wxWindow * parent)
 
     sizer->Add(top_sizer, 0, wxEXPAND);
 
+    wxBoxSizer *storage_sizer = new wxBoxSizer(wxHORIZONTAL);
+    m_storage_tab = new ::TabCtrl(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0);
+    m_storage_tab->SetBackgroundColor(wxColour("#EEEEEE"));
+    m_storage_tab->SetBorderColor(wxColour("#EEEEEE"));
+    m_storage_tab->SetFont(Label::Body_14);
+    m_storage_tab->SetMinSize({-1, 36 * em_unit(this) / 10});
+    m_storage_tab->AppendItem(_L("External"));
+    m_storage_tab->AppendItem(_L("Internal"));
+    m_storage_tab->SetItemPaddingSize(0, {12, 2});
+    m_storage_tab->SetItemPaddingSize(1, {12, 2});
+    m_storage_tab->SelectItem(0);
+    m_storage_tab->Hide();
+    storage_sizer->Add(m_storage_tab, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, 48);
+    storage_sizer->AddStretchSpacer(1);
+    sizer->Add(storage_sizer, 0, wxEXPAND);
+
     m_image_grid = new ImageGrid(this);
     m_image_grid->Bind(EVT_ITEM_ACTION, [this](wxCommandEvent &e) { doAction(size_t(e.GetExtraLong()), e.GetInt()); });
     m_image_grid->SetStatus(m_bmp_failed, _L("No printers."));
@@ -157,6 +177,10 @@ MediaFilePanel::MediaFilePanel(wxWindow * parent)
     m_button_all->Bind(wxEVT_COMMAND_BUTTON_CLICKED, time_button_clicked);
     m_button_all->SetValue(true);
 
+    m_storage_tab->Bind(wxEVT_TAB_SEL_CHANGED, [this](wxCommandEvent &e) {
+        SwitchStorage(e.GetInt() == 0);
+    });
+
     // File type
     auto type_button_clicked = [this](wxEvent &e) {
         Button *buttons[]{m_button_timelapse, m_button_video, m_button_model};
@@ -169,11 +193,13 @@ MediaFilePanel::MediaFilePanel(wxWindow * parent)
         buttons[m_last_type]->SetValue(!buttons[m_last_type]->GetValue());
         if (type == PrinterFileSystem::F_MODEL)
             m_image_grid->SetGroupMode(PrinterFileSystem::G_NONE);
+        updateStorageTabVisibility();
     };
     m_button_timelapse->Bind(wxEVT_COMMAND_BUTTON_CLICKED, type_button_clicked);
     m_button_video->Bind(wxEVT_COMMAND_BUTTON_CLICKED, type_button_clicked);
     m_button_model->Bind(wxEVT_COMMAND_BUTTON_CLICKED, type_button_clicked);
-    m_button_timelapse->SetValue(true);
+    m_last_type = PrinterFileSystem::F_MODEL;
+    m_button_model->SetValue(true);
 
     // File management
     m_button_management->Bind(wxEVT_COMMAND_BUTTON_CLICKED, [this](auto &e) {
@@ -228,6 +254,15 @@ void MediaFilePanel::UpdateByObj(MachineObject* obj)
         m_remote_proto = obj->get_file_remote();
         m_model_download_support = obj->file_model_download;
 
+        bool support_internal_storage = obj->is_support_model_internal_storage;
+        bool support_internal_timelapse = obj->is_support_internal_timelapse;
+        if (m_support_internal_storage != support_internal_storage ||
+            m_support_internal_timelapse != support_internal_timelapse) {
+            m_support_internal_storage = support_internal_storage;
+            m_support_internal_timelapse = support_internal_timelapse;
+            updateStorageTabVisibility();
+        }
+
         if (m_sdcard_exist != (obj->GetStorage()->get_sdcard_state() == DevStorage::HAS_SDCARD_NORMAL)) {
             m_sdcard_exist = obj->GetStorage()->get_sdcard_state() == DevStorage::HAS_SDCARD_NORMAL;
             sdcard_state_changed = true;
@@ -241,6 +276,12 @@ void MediaFilePanel::UpdateByObj(MachineObject* obj)
         m_local_proto = 0;
         m_remote_proto = 0;
         m_model_download_support = false;
+
+        if (m_support_internal_storage || m_support_internal_timelapse) {
+            m_support_internal_storage = false;
+            m_support_internal_timelapse = false;
+            updateStorageTabVisibility();
+        }
 
         if (m_sdcard_exist) {
             m_sdcard_exist = false; // reset sdcard state when no object
@@ -321,8 +362,16 @@ void MediaFilePanel::UpdateByObj(MachineObject* obj)
             int err = fs->GetLastError();
             if (!e.GetString().IsEmpty())
                 msg = e.GetString();
-            if (err != 0)
-                msg += " [%d]";
+
+            if (err != 0) {
+                if (PrinterFileSystem::isRetryOnError(err)) {
+                    icon = m_bmp_loading;
+                    msg = _L("Loading file list...");
+                } else {
+                    msg += " [%d]";
+                    msg += wxDateTime::Now().Format(_T(" <%m-%d %H:%M>"));
+                }
+            }
             if (fs->GetCount() == 0 && !msg.empty())
                 m_image_grid->SetStatus(icon, msg);
             if (e.GetInt() == PrinterFileSystem::Initializing)
@@ -372,15 +421,24 @@ void MediaFilePanel::SwitchStorage(bool external)
     if (m_external == external)
         return;
     m_external = external;
-    m_type_panel->Show(external);
-    if (!external) {
-        Button *buttons[]{m_button_timelapse, m_button_video, m_button_model};
-        auto button = buttons[PrinterFileSystem::F_MODEL];
-        wxCommandEvent event(wxEVT_COMMAND_BUTTON_CLICKED, button->GetId());
-        event.SetEventObject(button);
-        wxPostEvent(button, event);
-    }
+    if (m_storage_tab)
+        m_storage_tab->SelectItem(external ? 0 : 1);
     m_image_grid->SetFileType(m_last_type, m_external ? "" : "internal");
+}
+
+
+void MediaFilePanel::updateStorageTabVisibility()
+{
+    bool show_tab = false;
+    if (m_last_type == PrinterFileSystem::F_MODEL)
+        show_tab = m_support_internal_storage;
+    else if (m_last_type == PrinterFileSystem::F_TIMELAPSE)
+        show_tab = m_support_internal_timelapse;
+
+    m_storage_tab->Show(show_tab);
+    if (!show_tab && !m_external)
+        SwitchStorage(true);
+    Layout();
 }
 
 void MediaFilePanel::Rescale()
@@ -394,6 +452,9 @@ void MediaFilePanel::Rescale()
     m_button_year->Rescale();
     m_button_month->Rescale();
     m_button_all->Rescale();
+
+    m_storage_tab->Rescale();
+    m_storage_tab->SetMinSize({-1, 36 * em_unit(this) / 10});
 
     m_button_video->Rescale();
     m_button_timelapse->Rescale();
@@ -493,8 +554,13 @@ void MediaFilePanel::fetchUrl(boost::weak_ptr<PrinterFileSystem> wfs)
     }
     if (agent) {
         std::string protocols[] = {"", "\"tutk\"", "\"agora\"", "\"tutk\",\"agora\""};
-        agent->get_camera_url(m_machine + "|" + m_dev_ver + "|" + protocols[m_remote_proto],
-            [this, wfs, m = m_machine, v = agent->get_version(), dv = m_dev_ver](std::string url) {
+        std::string machine = m_machine;
+        std::string dev_ver = m_dev_ver;
+        std::string agent_version = agent->get_version();
+
+        auto apply_url = std::make_shared<std::function<void(std::string)>>();
+
+        *apply_url = [this, wfs, m = machine, v = agent_version, dv = dev_ver](std::string url) {
             if (boost::algorithm::starts_with(url, "bambu:///")) {
                 url += "&device=" + m;
                 url += "&net_ver=" + v;
@@ -520,7 +586,28 @@ void MediaFilePanel::fetchUrl(boost::weak_ptr<PrinterFileSystem> wfs)
                     fs->SetUrl(res);
                 }
             });
-        }, wxGetApp().get_printer_cloud_provider());
+        };
+
+        const std::string provider = wxGetApp().get_printer_cloud_provider();
+        std::string dev_id = machine + "|" + dev_ver + "|" + protocols[m_remote_proto];
+        int ret = agent->get_camera_url(dev_id, [agent, machine, apply_url, provider](std::string url) {
+            if (!url.empty()) {
+                (*apply_url)(std::move(url));
+                return;
+            }
+
+            int retry_ret = agent->get_camera_url(machine, [apply_url](std::string retry_url) {
+                (*apply_url)(std::move(retry_url));
+            }, provider);
+
+            if (retry_ret != 0)
+                (*apply_url)(std::move(url));
+        }, provider);
+
+        if (ret != 0) {
+            (*apply_url)("[" + std::to_string(ret) + "]");
+        }
+
     }
 }
 

@@ -145,15 +145,8 @@ public:
             return std::make_shared<OrcaCloudServiceAgent>(log_dir);
         } else if (provider == BBL_CLOUD_PROVIDER) {
             auto& plugin = BBLNetworkPlugin::instance();
-            if (!plugin.is_loaded()) {
+            if (!plugin.create_agent(log_dir))
                 return nullptr;
-            }
-            if (!plugin.has_agent()) {
-                plugin.create_agent(log_dir);
-            }
-            if (!plugin.has_agent()) {
-                return nullptr;
-            }
             return std::make_shared<BBLCloudServiceAgent>();
         }
         return nullptr;

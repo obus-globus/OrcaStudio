@@ -19,11 +19,18 @@ set "generated_pot=%generated_i18n%\OrcaSlicer.pot"
 set "has_sources=0"
 set "script_exit_code=0"
 
+set "MSGFMT=.\tools\msgfmt.exe"
+set "MSGMERGE=.\tools\msgmerge.exe"
+set "XGETTEXT=.\tools\xgettext.exe"
+if not exist "%MSGFMT%" set "MSGFMT=msgfmt.exe"
+if not exist "%MSGMERGE%" set "MSGMERGE=msgmerge.exe"
+if not exist "%XGETTEXT%" set "XGETTEXT=xgettext.exe"
+
 if %FULL_MODE%==1 (
     call :prepareGettextList "%list_file%" "%filtered_list%" "%missing_list%"
     if "!has_sources!"=="1" (
         if not exist "%generated_i18n%" mkdir "%generated_i18n%"
-        .\tools\xgettext.exe --keyword=L --keyword=_L --keyword=_u8L --keyword=L_CONTEXT:1,2c --keyword=_L_CONTEXT:1,2c --keyword=_u8L_CONTEXT:1,2c --keyword=_L_PLURAL:1,2 --add-comments=TRN --from-code=UTF-8 --no-location --debug --boost --no-wrap -f "%filtered_list%" -o "%generated_pot%"
+        "%XGETTEXT%" --keyword=L --keyword=_L --keyword=_u8L --keyword=L_CONTEXT:1,2c --keyword=_L_CONTEXT:1,2c --keyword=_u8L_CONTEXT:1,2c --keyword=_L_PLURAL:1,2 --add-comments=TRN --from-code=UTF-8 --no-location --debug --boost --no-wrap -f "%filtered_list%" -o "%generated_pot%"
         if errorlevel 1 (
             set "script_exit_code=1"
         ) else (
@@ -122,7 +129,7 @@ exit /b %errorlevel%
     set "lang=%name:OrcaSlicer_=%"
     if %FULL_MODE%==1 if exist "%pot_file%" (
         set "merged_file=%TEMP%\orca_gettext_merged_%RANDOM%_%RANDOM%.po"
-        .\tools\msgmerge.exe -N --no-wrap -o "!merged_file!" "%file%" "%pot_file%"
+        "%MSGMERGE%" -N --no-wrap -o "!merged_file!" "%file%" "%pot_file%"
         if errorlevel 1 (
             if exist "!merged_file!" del "!merged_file!"
             echo Error encountered with msgmerge command for language !lang!.
@@ -132,9 +139,15 @@ exit /b %errorlevel%
         if errorlevel 1 exit /b 1
     )
     if not exist "./resources/i18n/!lang!" mkdir "./resources/i18n/!lang!"
-    .\tools\msgfmt.exe --check-format -o "./resources/i18n/!lang!/OrcaSlicer.mo" "%file%"
+    "%MSGFMT%" --check-format -o "./resources/i18n/!lang!/OrcaSlicer.mo" "%file%"
     if errorlevel 1 (
         echo Error encountered with msgfmt command for language !lang!.
+        exit /b 1
+    )
+    copy /Y ".\resources\i18n\!lang!\OrcaSlicer.mo" ".\resources\i18n\!lang!\OrcaStudio.mo" > nul
+    copy /Y ".\resources\i18n\!lang!\OrcaSlicer.mo" ".\resources\i18n\!lang!\BambuStudio.mo" > nul
+    if errorlevel 1 (
+        echo Error copying BambuStudio catalog for language !lang!.
         exit /b 1
     )
 exit /b 0

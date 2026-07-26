@@ -1806,7 +1806,7 @@ void PrinterPartsDialog::OnWikiClicked(wxMouseEvent& e)
 
     const wxString& url = obj->get_nozzle_replace_url();
     if (!url.IsEmpty()) {
-        wxLaunchDefaultBrowser(url);
+        wxGetApp().open_browser_with_warning_dialog(url);
     } else {
         wxMessageBox(_L("No wiki link available for this printer."), _L("Error"), wxOK | wxICON_ERROR, this);
     }

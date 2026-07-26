@@ -198,7 +198,7 @@ void PrintJob::process(Ctl &ctl)
         this->task_bed_type = bed_type_to_gcode_string(plate_data.is_valid ? plate_data.bed_type : curr_plate->get_bed_type(true));
     }
 
-    PrintParams params;
+    PrintParams params{};
 
     // local print access
     params.dev_ip = m_dev_ip;
@@ -234,7 +234,11 @@ void PrintJob::process(Ctl &ctl)
             ftp_ok = result == 0;
         }
         if (!emmc_ok && !ftp_ok) {
-            bool legacy_mode = BBLNetworkPlugin::instance().use_legacy_network();
+            bool legacy_mode = false;
+            {
+                auto module_lock = BBLNetworkPlugin::lock_module_for_call();
+                legacy_mode = BBLNetworkPlugin::instance().use_legacy_network();
+            }
             BOOST_LOG_TRIVIAL(error) << "LAN connection verification failed:"
                 << " emmc_ok=" << emmc_ok
                 << ", ftp_ok=" << ftp_ok
@@ -277,6 +281,7 @@ void PrintJob::process(Ctl &ctl)
     params.auto_offset_cali     = this->auto_offset_cali;
     params.extruder_cali_manual_mode = this->extruder_cali_manual_mode;
     params.task_ext_change_assist = this->task_ext_change_assist;
+    params.svc_context          = "";
     // Allow disabling the eMMC print path via AppConfig. Plugin 02.03.00.62's
     // eMMC tunnel code hangs indefinitely at the upload phase with some
     // printers (e.g., Bambu H2D), so we default to disabled. Users with
@@ -287,7 +292,7 @@ void PrintJob::process(Ctl &ctl)
         if (v == "0" || v == "false")
             disable_emmc = false;
     }
-    params.try_emmc_print         = this->could_emmc_print && !disable_emmc;
+    params.try_emmc_print         = this->could_emmc_print && (m_print_type == "from_sdcard_view" || !disable_emmc);
 
     if (m_print_type == "from_sdcard_view") {
         params.dst_file = m_dst_path;
@@ -333,6 +338,10 @@ void PrintJob::process(Ctl &ctl)
                 } catch (...) {}
             }
         }
+
+        auto svc_context = model_info->metadata_items.find(BBL_SVC_CONTEXT_TAG);
+        if (svc_context != model_info->metadata_items.end())
+            params.svc_context = svc_context->second;
     }
 
     params.stl_design_id = 0;
@@ -370,6 +379,19 @@ void PrintJob::process(Ctl &ctl)
                 stl_design_id = 0;
             }
             params.stl_design_id = stl_design_id;
+        }
+    }
+
+    const auto& model_design_id = wxGetApp().model().design_id;
+    if (params.stl_design_id == 0 || !model_design_id.empty()) {
+        if (model_design_id.empty()) {
+            params.stl_design_id = 0;
+        } else {
+            try {
+                params.stl_design_id = std::stoi(model_design_id);
+            } catch (...) {
+                params.stl_design_id = 0;
+            }
         }
     }
 

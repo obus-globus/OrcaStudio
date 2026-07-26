@@ -559,6 +559,8 @@ if [[ -n "${BUILD_ORCA}" ]] || [[ -n "${BUILD_TESTS}" ]] ; then
     print_and_run cmake -S . -B $BUILD_DIR "${CMAKE_C_CXX_COMPILER_CLANG[@]}" "${CMAKE_LLD_LINKER_ARGS[@]}" "${CMAKE_CCACHE_ARGS[@]}" -G "Ninja Multi-Config" \
 -DSLIC3R_PCH=${SLIC3R_PRECOMPILED_HEADERS} \
 -DORCA_TOOLS=ON \
+-DBBL_RELEASE_TO_PUBLIC=1 \
+-DBBL_INTERNAL_TESTING=0 \
 "${COLORED_OUTPUT}" \
 "${BUILD_ARGS[@]}"
     echo "done"
@@ -584,7 +586,7 @@ if [[ -n "${BUILD_IMAGE}" || -n "${BUILD_ORCA}" ]] ; then
         if [[ -n "${BUILD_IMAGE}" ]] ; then
             extra_script_args="-i"
         fi
-        print_and_run ${build_linux_image} ${extra_script_args} -R "${BUILD_CONFIG}"
+        print_and_run bash ${build_linux_image} ${extra_script_args} -R "${BUILD_CONFIG}"
 
         echo "done"
     fi

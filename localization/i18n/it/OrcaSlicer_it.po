@@ -20343,6 +20343,9 @@ msgstr "Versione da installare:"
 msgid "Download and Install"
 msgstr "Scarica e installa"
 
+msgid "Skip for Now"
+msgstr "Salta per ora"
+
 msgid "A new version of the Bambu Network Plug-in is available."
 msgstr "È disponibile una nuova versione del modulo di rete Bambu."
 
@@ -20359,6 +20362,12 @@ msgstr "Non chiedere più"
 msgid "Update Now"
 msgstr "Aggiorna ora"
 
+msgid "Remind Later"
+msgstr "Ricorda più tardi"
+
+msgid "Skip Version"
+msgstr "Salta versione"
+
 msgid "(Latest)"
 msgstr "(Ultima)"
 
@@ -20373,6 +20382,9 @@ msgstr "È necessario un riavvio per caricare il nuovo modulo. Vuoi riavviare or
 
 msgid "Restart Now"
 msgstr "Riavvia ora"
+
+msgid "Restart Later"
+msgstr "Riavvia più tardi"
 
 msgid "NO RAMMING AT ALL"
 msgstr "NESSUNA SPINTA"
@@ -20980,18 +20992,6 @@ msgstr ""
 
 #~ msgid "Hotend"
 #~ msgstr "Hotend"
-
-#~ msgid "Skip for Now"
-#~ msgstr "Salta per ora"
-
-#~ msgid "Remind Later"
-#~ msgstr "Ricorda più tardi"
-
-#~ msgid "Skip Version"
-#~ msgstr "Salta versione"
-
-#~ msgid "Restart Later"
-#~ msgstr "Riavvia più tardi"
 
 #~ msgid "Select filament that installed to the left nozzle"
 #~ msgstr "Selezionare il filamento installato nell'ugello sinistro"

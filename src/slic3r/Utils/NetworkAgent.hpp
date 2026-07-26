@@ -29,6 +29,8 @@ public:
     static int initialize_network_module(bool using_backup = false, const std::string& version = "");
     static int unload_network_module();
     static bool is_network_module_loaded();
+    static int active_source_tunnels();
+    static int active_forwarder_callbacks();
 #if defined(_MSC_VER) || defined(_WIN32)
     static HMODULE get_bambu_source_entry();
 #else
@@ -163,6 +165,7 @@ public:
     int start_send_gcode_to_sdcard(PrintParams params, OnUpdateStatusFn update_fn, WasCancelledFn cancel_fn, OnWaitFn wait_fn);
     int start_local_print(PrintParams params, OnUpdateStatusFn update_fn, WasCancelledFn cancel_fn);
     int start_sdcard_print(PrintParams params, OnUpdateStatusFn update_fn, WasCancelledFn cancel_fn);
+    bool retry_last_print_request(const std::string& dev_id);
     FilamentSyncMode get_filament_sync_mode() const;
     bool fetch_filament_info(std::string dev_id);
     int request_bind_ticket(std::string* ticket);

@@ -20110,6 +20110,9 @@ msgstr "Instalatu beharreko bertsioa:"
 msgid "Download and Install"
 msgstr "Deskargatu eta instalatu"
 
+msgid "Skip for Now"
+msgstr "Saltatu oraingoz"
+
 msgid "A new version of the Bambu Network Plug-in is available."
 msgstr "Bambu Network Plug-inaren bertsio berria erabilgarri dago."
 
@@ -20126,6 +20129,12 @@ msgstr "Ez galdetu berriro"
 msgid "Update Now"
 msgstr "Eguneratu orain"
 
+msgid "Remind Later"
+msgstr "Gogorarazi geroago"
+
+msgid "Skip Version"
+msgstr "Saltatu bertsioa"
+
 msgid "(Latest)"
 msgstr "(Berriena)"
 
@@ -20140,6 +20149,9 @@ msgstr "Berrabiarazi egin behar da plugin berria kargatzeko. Orain berrabiarazi 
 
 msgid "Restart Now"
 msgstr "Berrabiarazi orain"
+
+msgid "Restart Later"
+msgstr "Berrabiarazi geroago"
 
 msgid "NO RAMMING AT ALL"
 msgstr "MUTURRAREN MOLDAKETARIK EZ INONDIK INORA"
@@ -20749,18 +20761,6 @@ msgstr ""
 
 #~ msgid "Hotend"
 #~ msgstr "Hotend-a"
-
-#~ msgid "Skip for Now"
-#~ msgstr "Saltatu oraingoz"
-
-#~ msgid "Remind Later"
-#~ msgstr "Gogorarazi geroago"
-
-#~ msgid "Skip Version"
-#~ msgstr "Saltatu bertsioa"
-
-#~ msgid "Restart Later"
-#~ msgstr "Berrabiarazi geroago"
 
 #~ msgid "Invalid spacing supplied to Flow::with_spacing(), check your layer height and extrusion width."
 #~ msgstr "Flow::with_spacing() funtzioari tarte baliogabea eman zaio; egiaztatu geruza-altuera eta estrusio-zabalera"

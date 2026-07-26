@@ -8,7 +8,8 @@
 #ifndef MediaPlayCtrl_h
 #define MediaPlayCtrl_h
 
-#include "wxMediaCtrl2.h"
+#include "wxMediaCtrl3.h"
+using BBLMediaCtrl = wxMediaCtrl3;
 
 #include <wx/panel.h>
 
@@ -30,13 +31,14 @@ namespace GUI {
 class MediaPlayCtrl : public wxPanel
 {
 public:
-    MediaPlayCtrl(wxWindow *parent, wxMediaCtrl2 *media_ctrl, const wxPoint &pos = wxDefaultPosition, const wxSize &size = wxDefaultSize);
+    MediaPlayCtrl(wxWindow *parent, BBLMediaCtrl *media_ctrl, const wxPoint &pos = wxDefaultPosition, const wxSize &size = wxDefaultSize);
 
     ~MediaPlayCtrl();
 
     void SetMachineObject(MachineObject * obj);
 
     bool IsStreaming() const;
+    bool stop_for_network_reload(int timeout_ms);
 
     void ToggleStream();
 
@@ -75,7 +77,7 @@ private:
     // token
     std::shared_ptr<int> m_token = std::make_shared<int>(0);
 
-    wxMediaCtrl2 * m_media_ctrl;
+    BBLMediaCtrl * m_media_ctrl;
     wxMediaState m_last_state = MEDIASTATE_IDLE;
     std::string m_machine;
     int m_lan_proto = 0;
@@ -97,6 +99,7 @@ private:
     boost::thread m_thread;
 
     bool m_streaming = false;
+    bool m_reload_barrier_done = false;
     bool m_user_triggered = false;
     int m_failed_retry = 0;
     int m_failed_code = 0;

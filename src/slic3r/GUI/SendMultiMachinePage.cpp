@@ -441,7 +441,7 @@ void SendMultiMachinePage::refresh_user_device()
 
 PrintParams SendMultiMachinePage::request_params(MachineObject* obj)
 {
-    PrintParams params;
+    PrintParams params{};
 
     //get all setting
     bool bed_leveling = app_config->get("print", "bed_leveling") == "1" ? true : false;

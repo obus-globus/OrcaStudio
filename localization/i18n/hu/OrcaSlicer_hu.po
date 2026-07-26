@@ -20360,6 +20360,9 @@ msgstr "Telepítendő verzió:"
 msgid "Download and Install"
 msgstr "Letöltés és telepítés"
 
+msgid "Skip for Now"
+msgstr "Kihagyás most"
+
 msgid "A new version of the Bambu Network Plug-in is available."
 msgstr "Létezik új verzió a Bambu hálózati bővítményre."
 
@@ -20376,6 +20379,12 @@ msgstr "Ne kérdezz újra"
 msgid "Update Now"
 msgstr "Frissítés most"
 
+msgid "Remind Later"
+msgstr "Emlékeztessen később"
+
+msgid "Skip Version"
+msgstr "Verzió kihagyása"
+
 msgid "(Latest)"
 msgstr "(Legfrissebb)"
 
@@ -20390,6 +20399,9 @@ msgstr "Az új plug-in betöltéséhez újraindítás szükséges. Szeretnéd mo
 
 msgid "Restart Now"
 msgstr "Újraindítás most"
+
+msgid "Restart Later"
+msgstr "Újraindítás később"
 
 msgid "NO RAMMING AT ALL"
 msgstr "EGYÁLTALÁN NINCS TÖMÖRÍTÉS"
@@ -20997,18 +21009,6 @@ msgstr ""
 
 #~ msgid "Hotend"
 #~ msgstr "Fejegység"
-
-#~ msgid "Skip for Now"
-#~ msgstr "Kihagyás most"
-
-#~ msgid "Remind Later"
-#~ msgstr "Emlékeztessen később"
-
-#~ msgid "Skip Version"
-#~ msgstr "Verzió kihagyása"
-
-#~ msgid "Restart Later"
-#~ msgstr "Újraindítás később"
 
 #~ msgid "Select filament that installed to the left nozzle"
 #~ msgstr "Válaszd ki a bal fúvókába betöltött filamentet"

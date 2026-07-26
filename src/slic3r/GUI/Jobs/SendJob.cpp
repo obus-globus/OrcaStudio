@@ -100,7 +100,7 @@ inline std::string get_transform_string(int bytes)
 
 void SendJob::process(Ctl &ctl)
 {
-    PrintParams params;
+    PrintParams params{};
     std::string msg;
     int curr_percent = 10;
     NetworkAgent* agent = wxGetApp().getAgent();

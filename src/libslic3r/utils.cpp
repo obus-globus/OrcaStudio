@@ -932,39 +932,83 @@ CopyFileResult copy_file_inner(const std::string& from, const std::string& to, s
 	return SUCCESS;
 }
 
+#ifdef WIN32
+static std::wstring utf8_to_wstring(const std::string &s)
+{
+    if (s.empty())
+        return {};
+    const int len = ::MultiByteToWideChar(CP_UTF8, 0, s.data(), int(s.size()), nullptr, 0);
+    if (len <= 0)
+        return {};
+    std::wstring out(size_t(len), L'\0');
+    ::MultiByteToWideChar(CP_UTF8, 0, s.data(), int(s.size()), out.data(), len);
+    return out;
+}
+
+static std::string wstring_to_utf8(const std::wstring &s)
+{
+    if (s.empty())
+        return {};
+    const int len = ::WideCharToMultiByte(CP_UTF8, 0, s.data(), int(s.size()), nullptr, 0, nullptr, nullptr);
+    if (len <= 0)
+        return {};
+    std::string out(size_t(len), '\0');
+    ::WideCharToMultiByte(CP_UTF8, 0, s.data(), int(s.size()), out.data(), len, nullptr, nullptr);
+    return out;
+}
+
+static std::wstring windows_long_path(const std::wstring &input)
+{
+    if (input.rfind(L"\\\\?\\", 0) == 0)
+        return input;
+
+    std::wstring path = input;
+    for (wchar_t &c : path)
+        if (c == L'/')
+            c = L'\\';
+
+    if (path.rfind(L"\\\\", 0) == 0)
+        return L"\\\\?\\UNC\\" + path.substr(2);
+
+    if (path.size() >= 3 && path[1] == L':' && path[2] == L'\\')
+        return L"\\\\?\\" + path;
+
+    return path;
+}
+
+static std::string windows_error_message(DWORD code)
+{
+    wchar_t *buf = nullptr;
+    const DWORD flags = FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS;
+    const DWORD len = ::FormatMessageW(flags, nullptr, code, 0, reinterpret_cast<wchar_t *>(&buf), 0, nullptr);
+    std::string msg = len && buf ? wstring_to_utf8(std::wstring(buf, len)) : std::string();
+    if (buf)
+        ::LocalFree(buf);
+    while (!msg.empty() && (msg.back() == '\r' || msg.back() == '\n' || msg.back() == ' ' || msg.back() == '.'))
+        msg.pop_back();
+    return "Error " + std::to_string(code) + (msg.empty() ? std::string() : ": " + msg);
+}
+#endif
+
 CopyFileResult copy_file(const std::string &from, const std::string &to, std::string& error_message, const bool with_check)
 {
 #ifdef WIN32
-    //wxString src = from_u8(from);
-    //wxString dest = from_u8(to);
-    const char* src_str = from.c_str();
-    const char* dest_str = to.c_str();
-    int src_wlen = ::MultiByteToWideChar(CP_UTF8, NULL, src_str, strlen(src_str), NULL, 0);
-    wchar_t* src_wstr = new wchar_t[src_wlen + 1];
-    ::MultiByteToWideChar(CP_UTF8, NULL, src_str, strlen(src_str), src_wstr, src_wlen);
-    src_wstr[src_wlen] = '\0';
+    const std::wstring src = windows_long_path(utf8_to_wstring(from));
+    const std::wstring dst = windows_long_path(utf8_to_wstring(to));
 
-    int dst_wlen = ::MultiByteToWideChar(CP_UTF8, NULL, dest_str, strlen(dest_str), NULL, 0);
-    wchar_t* dst_wstr = new wchar_t[dst_wlen + 1];
-    ::MultiByteToWideChar(CP_UTF8, NULL, dest_str, strlen(dest_str), dst_wstr, dst_wlen);
-    dst_wstr[dst_wlen] = '\0';
-
-    CopyFileResult ret = SUCCESS;
-    BOOL result = CopyFileW(src_wstr, dst_wstr, FALSE);
-    if (!result) {
-        DWORD errCode = GetLastError();
-        error_message = "Error: " + errCode;
-        ret = FAIL_COPY_FILE;
-        goto __finished;
+    if (src.empty() || dst.empty()) {
+        error_message = "Invalid UTF-8 path";
+        return FAIL_COPY_FILE;
     }
 
-__finished:
-    if (src_wstr)
-        delete[] src_wstr;
-    if (dst_wstr)
-        delete[] dst_wstr;
+    if (!::CopyFileW(src.c_str(), dst.c_str(), FALSE)) {
+        error_message = windows_error_message(::GetLastError());
+        BOOST_LOG_TRIVIAL(error) << boost::format("###copy_file from %1% to %2% failed, error: %3% ")
+            % from % to % error_message;
+        return FAIL_COPY_FILE;
+    }
 
-    return ret;
+    return SUCCESS;
 #else
     std::string to_temp = to + ".tmp";
     CopyFileResult ret_val = copy_file_inner(from, to_temp, error_message);
@@ -1764,10 +1808,11 @@ bool install_vendor_bundles_from_resources(
             auto dir_in_vendors = vendor_path / bundle;
 
             if (fs::exists(dir_in_rsrc) && fs::is_directory(dir_in_rsrc)) {
-                // Remove existing directory
-                if (fs::exists(dir_in_vendors))
-                    fs::remove_all(dir_in_vendors);
-                fs::create_directories(dir_in_vendors);
+                auto dir_in_vendors_tmp = vendor_path / (bundle + ".tmp");
+
+                if (fs::exists(dir_in_vendors_tmp))
+                    fs::remove_all(dir_in_vendors_tmp);
+                fs::create_directories(dir_in_vendors_tmp);
 
                 // Copy with file filter (same as PresetUpdater::install_bundles_rsrc)
                 // Filter out certain file types: .stl, .png, .svg, .jpeg, .jpg, .3mf
@@ -1780,7 +1825,11 @@ bool install_vendor_bundles_from_resources(
                            boost::iends_with(name, ".3mf");
                 };
 
-                copy_directory_recursively(dir_in_rsrc, dir_in_vendors, file_filter);
+                copy_directory_recursively(dir_in_rsrc, dir_in_vendors_tmp, file_filter);
+
+                if (fs::exists(dir_in_vendors))
+                    fs::remove_all(dir_in_vendors);
+                fs::rename(dir_in_vendors_tmp, dir_in_vendors);
             }
 
             BOOST_LOG_TRIVIAL(info) << "Successfully installed bundle: " << bundle;

@@ -640,7 +640,7 @@ wxBoxSizer *Newer3mfVersionDialog::get_btn_sizer()
             EndModal(wxID_OK);
             if (wxGetApp().app_config->has("app", "cloud_software_url")) {
                 std::string download_url = wxGetApp().app_config->get("app", "cloud_software_url");
-                wxLaunchDefaultBrowser(download_url);
+                wxGetApp().open_browser_with_warning_dialog(download_url);
             } else {
                 BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << "Bambu Studio conf has no cloud_software_url and file_version: " << m_file_version->to_string()
                                         << " and cloud_version: " << m_cloud_version->to_string();

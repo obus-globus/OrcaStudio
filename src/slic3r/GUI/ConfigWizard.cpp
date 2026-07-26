@@ -503,18 +503,8 @@ void ConfigWizardPage::append_spacer(int space)
 // Wizard pages
 
 PageWelcome::PageWelcome(ConfigWizard *parent)
-    : ConfigWizardPage(parent, from_u8((boost::format(
-#ifdef __APPLE__
-            _utf8(L("Welcome to the %s Configuration Assistant"))
-#else
-            _utf8(L("Welcome to the %s Configuration Wizard"))
-#endif
-            ) % SLIC3R_APP_NAME).str()), _L("Welcome"))
-    , welcome_text(append_text(from_u8((boost::format(
-        _utf8(L("Hello, welcome to %s! This %s helps you with the initial configuration; just a few settings and you will be ready to print.")))
-        % SLIC3R_APP_NAME
-        % _utf8(ConfigWizard::name())).str())
-    ))
+    : ConfigWizardPage(parent, _L("Welcome to BambuStudio with OrcaSlicer changes"), _L("Welcome"))
+    , welcome_text(append_text(_L("Hello, welcome to BambuStudio with OrcaSlicer changes! This configuration wizard helps you with the initial configuration; just a few settings and you will be ready to print.")))
     , cbox_reset(append(
         new wxCheckBox(this, wxID_ANY, _L("Remove user profiles (a snapshot will be taken beforehand)"))
     ))

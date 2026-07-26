@@ -20459,6 +20459,9 @@ msgstr "Version zum Installieren:"
 msgid "Download and Install"
 msgstr "Herunterladen und installieren"
 
+msgid "Skip for Now"
+msgstr "Jetzt überspringen"
+
 msgid "A new version of the Bambu Network Plug-in is available."
 msgstr "Eine neue Version des Bambu Network Plug-ins ist verfügbar."
 
@@ -20475,6 +20478,12 @@ msgstr "Nicht mehr fragen"
 msgid "Update Now"
 msgstr "Jetzt aktualisieren"
 
+msgid "Remind Later"
+msgstr "Später erinnern"
+
+msgid "Skip Version"
+msgstr "Version überspringen"
+
 msgid "(Latest)"
 msgstr "(Neueste)"
 
@@ -20489,6 +20498,9 @@ msgstr "Ein Neustart ist erforderlich, um das neue Plug-in zu laden. Möchten Si
 
 msgid "Restart Now"
 msgstr "Jetzt neu starten"
+
+msgid "Restart Later"
+msgstr "Später neu starten"
 
 msgid "NO RAMMING AT ALL"
 msgstr "KEIN RAMMING ÜBERALL"
@@ -21107,18 +21119,6 @@ msgstr ""
 
 #~ msgid "Hotend"
 #~ msgstr "Hotend"
-
-#~ msgid "Skip for Now"
-#~ msgstr "Jetzt überspringen"
-
-#~ msgid "Remind Later"
-#~ msgstr "Später erinnern"
-
-#~ msgid "Skip Version"
-#~ msgstr "Version überspringen"
-
-#~ msgid "Restart Later"
-#~ msgstr "Später neu starten"
 
 #~ msgid "Select filament that installed to the left nozzle"
 #~ msgstr "wählen Sie das Filament aus, das in die linke Düse eingesetzt ist"

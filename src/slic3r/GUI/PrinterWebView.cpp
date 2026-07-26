@@ -310,7 +310,7 @@ void PrinterWebView::OnNewWindow(wxWebViewEvent& evt)
 {
   const wxString url = evt.GetURL();
   if (!url.empty())
-    wxLaunchDefaultBrowser(url);
+    wxGetApp().open_browser_with_warning_dialog(url);
   evt.Veto();
 }
 

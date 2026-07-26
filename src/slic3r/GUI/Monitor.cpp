@@ -561,18 +561,7 @@ void MonitorPanel::update_network_version_footer()
     if (binary_version.empty())
         return;
 
-    std::string configured_version = wxGetApp().app_config->get_network_plugin_version();
-    std::string suffix = extract_suffix(configured_version);
-    std::string configured_base = extract_base_version(configured_version);
-
-    wxString footer_text;
-    if (!suffix.empty() && configured_base == binary_version) {
-        footer_text = wxString::Format(_L("Network plug-in v%s (%s)"), binary_version, suffix);
-    } else {
-        footer_text = wxString::Format(_L("Network plug-in v%s"), binary_version);
-    }
-
-    m_tabpanel->SetFooterText(footer_text);
+    m_tabpanel->SetFooterText(wxString::Format(_L("Network plug-in v%s"), binary_version));
 }
 
 } // GUI

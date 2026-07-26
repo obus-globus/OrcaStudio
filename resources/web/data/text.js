@@ -1,7 +1,7 @@
 var LangText = {
   en: {
-    t1: "Welcome to Orca Slicer",
-    t2: "Orca Slicer will be setup in several steps. Let's start!",
+    t1: "Welcome to BambuStudio with OrcaSlicer changes",
+    t2: "BambuStudio with OrcaSlicer changes will be set up in several steps. Let's start!",
     t3: "User Agreement",
     t4: "Disagree",
     t5: "Agree",
@@ -120,8 +120,8 @@ var LangText = {
     orca12: "Note: When Stealth Mode is enabled, your user profiles will not be backed up to Orca Cloud.",
   },
   ca_ES: {
-    t1: "Benvingut a Orca Slicer",
-    t2: "Orca Slicer es configurarà en diversos passos. Comencem!",
+    t1: "Benvingut a BambuStudio amb canvis d'OrcaSlicer",
+    t2: "BambuStudio amb canvis d'OrcaSlicer es configurarà en diversos passos. Comencem!",
     t3: "Acord de l'Usuari",
     t4: "No accepto",
     t5: "Accepto",
@@ -235,8 +235,8 @@ var LangText = {
     orca11: "Connected",
   },
   es_ES: {
-    t1: "Bienvenido a Orca Slicer",
-    t2: "Orca Slicer se configurará mediante varios pasos. ¡Comencemos!",
+    t1: "Bienvenido a BambuStudio con cambios de OrcaSlicer",
+    t2: "BambuStudio con cambios de OrcaSlicer se configurará en varios pasos. Empecemos.",
     t3: "Términos de uso",
     t4: "No acepto",
     t5: "Acepto",
@@ -353,8 +353,8 @@ var LangText = {
     orca11: "Connected",
   },
   it_IT: {
-    t1: "Benvenuti in OrcaSlicer",
-    t2: "OrcaSlicer verrà configurato seguendo diversi passaggi. Cominciamo!",
+    t1: "Benvenuto in BambuStudio con modifiche di OrcaSlicer",
+    t2: "BambuStudio con modifiche di OrcaSlicer verrà configurato in diversi passaggi. Iniziamo.",
     t3: "Condizioni d'uso",
     t4: "Non accetto",
     t5: "Accetto",
@@ -470,8 +470,8 @@ var LangText = {
     orca11: "Connected",
   },
   de_DE: {
-    t1: "Willkommen im Orca Slicer",
-    t2: "Das Orca Slicer wird in mehreren Schritten eingerichtet. Lass uns anfangen!",
+    t1: "Willkommen bei BambuStudio mit OrcaSlicer-Änderungen",
+    t2: "BambuStudio mit OrcaSlicer-Änderungen wird in mehreren Schritten eingerichtet. Los gehts.",
     t3: "Nutzervereinbarung",
     t4: "Ablehnen",
     t5: "Zustimmen",
@@ -579,8 +579,8 @@ var LangText = {
     orca11: "Connected",
   },
   cs_CZ: {
-    t1: "Vítejte v Orca Slicer",
-    t2: "Orca Slicer bude nastaven v několika krocích. Začněme!",
+    t1: "Vítejte v BambuStudio se změnami z OrcaSlicer",
+    t2: "BambuStudio se změnami z OrcaSlicer bude nastaveno v několika krocích. Začněme.",
     t3: "Uživatelská smlouva",
     t4: "Nesouhlasím",
     t5: "Souhlasím",
@@ -688,8 +688,8 @@ var LangText = {
     orca11: "Connected",
   },
   fr_FR: {
-    t1: "Bienvenue sur Orca Slicer",
-    t2: "Orca Slicer sera configuré en plusieurs étapes. Commençons !",
+    t1: "Bienvenue dans BambuStudio avec les modifications d'OrcaSlicer",
+    t2: "BambuStudio avec les modifications d'OrcaSlicer sera configuré en plusieurs étapes. Commençons.",
     t3: "Accord d'utilisation",
     t4: "Décliner",
     t5: "Accepter",
@@ -816,8 +816,8 @@ var LangText = {
     orca11: "Connected",
   },
   zh_CN: {
-    t1: "欢迎使用Orca Slicer",
-    t2: "Orca Slicer需要几步安装步骤，让我们开始吧！",
+    t1: "欢迎使用带有 OrcaSlicer 更改的 BambuStudio",
+    t2: "带有 OrcaSlicer 更改的 BambuStudio 将通过几个步骤完成设置。开始吧。",
     t3: "用户使用协议",
     t4: "拒绝",
     t5: "同意",
@@ -948,8 +948,8 @@ var LangText = {
     orca11: "Connected",
   },
   zh_TW: {
-    t1: "歡迎使用 Orca Slicer",
-    t2: "Orca Slicer 需要幾步安裝步驟，讓我們開始吧！",
+    t1: "歡迎使用帶有 OrcaSlicer 變更的 BambuStudio",
+    t2: "帶有 OrcaSlicer 變更的 BambuStudio 將透過幾個步驟完成設定。開始吧。",
     t3: "使用者協議",
     t4: "拒絕",
     t5: "同意",
@@ -1059,8 +1059,8 @@ var LangText = {
     orca11: "Connected",
   },
   ru_RU: {
-    t1: "Приветствуем в Orca Slicer!",
-    t2: "Для настройки Orca Slicer необходимо пройти несколько этапов. Давайте начнём!",
+    t1: "Добро пожаловать в BambuStudio с изменениями OrcaSlicer",
+    t2: "BambuStudio с изменениями OrcaSlicer будет настроен за несколько шагов. Начнем.",
     t3: "Пользовательское соглашение",
     t4: "Отказаться",
     t5: "Принять",
@@ -1177,8 +1177,8 @@ var LangText = {
     orca11: "Connected",
   },
   ko_KR: {
-    t1: "Orca Slicer에 오신 것을 환영합니다",
-    t2: "Orca Slicer는 여러 단계로 설정됩니다. 시작!",
+    t1: "OrcaSlicer 변경 사항이 적용된 BambuStudio에 오신 것을 환영합니다",
+    t2: "OrcaSlicer 변경 사항이 적용된 BambuStudio가 몇 단계로 설정됩니다. 시작하겠습니다.",
     t3: "사용자 약관",
     t4: "거부",
     t5: "동의",
@@ -1275,8 +1275,8 @@ var LangText = {
     orca11: "Connected",
   },
   tr_TR: {
-    t1: "Orca Slicer'a hoş geldiniz",
-    t2: "Orca Dilimleyici birkaç adımda kurulacaktır. Hadi başlayalım!",
+    t1: "OrcaSlicer değişiklikleriyle BambuStudio'ya hoş geldiniz",
+    t2: "OrcaSlicer değişiklikleriyle BambuStudio birkaç adımda ayarlanacak. Başlayalım.",
     t3: "Kullanıcı Sözleşmesi",
     t4: "Reddet",
     t5: "Onayla",
@@ -1393,8 +1393,8 @@ var LangText = {
     orca11: "Connected",
   },
   pl_PL: {
-    t1: "Witamy w Orca Slicer",
-    t2: "Orca Slicer zostanie skonfigurowany w kilku krokach. Zacznijmy!",
+    t1: "Witamy w BambuStudio ze zmianami z OrcaSlicer",
+    t2: "BambuStudio ze zmianami z OrcaSlicer zostanie skonfigurowane w kilku krokach. Zaczynajmy.",
     t3: "Umowa użytkownika",
     t4: "Nie zgadzam się",
     t5: "Zgadzam się",
@@ -1511,8 +1511,8 @@ var LangText = {
     orca11: "Connected",
   },
   pt_BR: {
-    t1: "Bem-vindo ao Orca Slicer",
-    t2: "Orca Slicer será configurado em várias etapas. Vamos começar!",
+    t1: "Bem-vindo ao BambuStudio com alterações do OrcaSlicer",
+    t2: "O BambuStudio com alterações do OrcaSlicer será configurado em várias etapas. Vamos começar.",
     t3: "Termos de Uso",
     t4: "Discordo",
     t5: "Concordo",
@@ -1629,8 +1629,8 @@ var LangText = {
     orca11: "Connected",
   },
   lt_LT: {
-    t1: "Pasisveikinkite su Orca Slicer",
-    t2: "Orca Slicer bus nustatyta per kelis žingsnius. Pradėkime!",
+    t1: "Sveiki atvykę į BambuStudio su OrcaSlicer pakeitimais",
+    t2: "BambuStudio su OrcaSlicer pakeitimais bus sukonfigūruotas keliais veiksmais. Pradėkime.",
     t3: "Naudotojo sutartis",
     t4: "Nesutinku",
     t5: "Sutinku",
@@ -1762,6 +1762,29 @@ function TranslatePage() {
 
   //alert(strLang);
 
+  const langAliases = {
+    ca: "ca_ES",
+    cs: "cs_CZ",
+    de: "de_DE",
+    es: "es_ES",
+    fr: "fr_FR",
+    it: "it_IT",
+    ko: "ko_KR",
+    lt: "lt_LT",
+    pl: "pl_PL",
+    pt: "pt_BR",
+    pt_PT: "pt_BR",
+    ru: "ru_RU",
+    tr: "tr_TR",
+    zh: "zh_CN",
+    zh_Hans: "zh_CN",
+    zh_Hant: "zh_TW"
+  };
+  if (!LangText.hasOwnProperty(strLang) && langAliases.hasOwnProperty(strLang)) strLang = langAliases[strLang];
+  if (!LangText.hasOwnProperty(strLang)) {
+    const baseLang = (strLang || "").split(/[\-_]/)[0];
+    if (langAliases.hasOwnProperty(baseLang)) strLang = langAliases[baseLang];
+  }
   if (!LangText.hasOwnProperty(strLang)) strLang = "en";
 
   let AllNode = $(".trans");

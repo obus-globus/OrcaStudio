@@ -20244,6 +20244,9 @@ msgstr "Версія для встановлення:"
 msgid "Download and Install"
 msgstr "Завантажити і встановити"
 
+msgid "Skip for Now"
+msgstr "Пропустити поки що"
+
 msgid "A new version of the Bambu Network Plug-in is available."
 msgstr "Доступна нова версія мережевого плагіна Bambu."
 
@@ -20260,6 +20263,12 @@ msgstr "Не запитувати знову"
 msgid "Update Now"
 msgstr "Оновити зараз"
 
+msgid "Remind Later"
+msgstr "Нагадати пізніше"
+
+msgid "Skip Version"
+msgstr "Пропустити версію"
+
 msgid "(Latest)"
 msgstr "(Останній)"
 
@@ -20274,6 +20283,9 @@ msgstr "Для завантаження нового плагіна потріб
 
 msgid "Restart Now"
 msgstr "Перезапустити зараз"
+
+msgid "Restart Later"
+msgstr "Перезапустити пізніше"
 
 msgid "NO RAMMING AT ALL"
 msgstr "ВЗАГАЛІ БЕЗ УТРАМБУВАННЯ"
@@ -20887,18 +20899,6 @@ msgstr ""
 
 #~ msgid "Hotend"
 #~ msgstr "Хотенд"
-
-#~ msgid "Skip for Now"
-#~ msgstr "Пропустити поки що"
-
-#~ msgid "Remind Later"
-#~ msgstr "Нагадати пізніше"
-
-#~ msgid "Skip Version"
-#~ msgstr "Пропустити версію"
-
-#~ msgid "Restart Later"
-#~ msgstr "Перезапустити пізніше"
 
 #~ msgid "Select filament that installed to the left nozzle"
 #~ msgstr "Вибрати філамент, що встановлений на ліве сопло"
@@ -22201,3 +22201,11 @@ msgstr ""
 
 #~ msgid "Set the brim type to \"painted\""
 #~ msgstr "Встановіть тип кайми на \"Мальована\""
+
+#: src/slic3r/GUI/ConfigWizard.cpp:506 resources/web/guide/1/index.html:20
+msgid "Welcome to BambuStudio with OrcaSlicer changes"
+msgstr "Ласкаво просимо до BambuStudio зі змінами OrcaSlicer"
+
+#: src/slic3r/GUI/ConfigWizard.cpp:507
+msgid "Hello, welcome to BambuStudio with OrcaSlicer changes! This configuration wizard helps you with the initial configuration; just a few settings and you will be ready to print."
+msgstr "Вітаємо, ласкаво просимо до BambuStudio зі змінами OrcaSlicer. Цей майстер конфігурації допоможе з початковим налаштуванням; лише кілька параметрів, і ви будете готові до друку."

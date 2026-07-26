@@ -93,10 +93,10 @@ HMSNotifyItem::HMSNotifyItem(const std::string& dev_id, wxWindow *parent, DevHMS
         }
         });
     m_panel_hms->Bind(wxEVT_LEFT_UP, [this](wxMouseEvent& e) {
-        if (!m_url.empty()) wxLaunchDefaultBrowser(m_url);
+        if (!m_url.empty()) wxGetApp().open_browser_with_warning_dialog(m_url);
         });
     m_hms_content->Bind(wxEVT_LEFT_UP, [this](wxMouseEvent& e) {
-        if (!m_url.empty()) wxLaunchDefaultBrowser(m_url);
+        if (!m_url.empty()) wxGetApp().open_browser_with_warning_dialog(m_url);
         });
 #else
     m_hms_content->Bind(wxEVT_ENTER_WINDOW, [this](wxMouseEvent& e) {
@@ -124,7 +124,7 @@ HMSNotifyItem::HMSNotifyItem(const std::string& dev_id, wxWindow *parent, DevHMS
             evt.SetString(long_error_code);
             wxPostEvent(wxGetApp().mainframe->m_monitor, evt);
 
-            if (!m_url.empty()) wxLaunchDefaultBrowser(m_url);
+            if (!m_url.empty()) wxGetApp().open_browser_with_warning_dialog(m_url);
         });
 #endif
 

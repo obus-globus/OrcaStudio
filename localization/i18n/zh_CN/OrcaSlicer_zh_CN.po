@@ -20374,6 +20374,9 @@ msgstr "将安装的版本："
 msgid "Download and Install"
 msgstr "下载并安装"
 
+msgid "Skip for Now"
+msgstr "暂时跳过"
+
 msgid "A new version of the Bambu Network Plug-in is available."
 msgstr "Bambu 网络插件有新版本可用。"
 
@@ -20390,6 +20393,12 @@ msgstr "不再询问"
 msgid "Update Now"
 msgstr "立即更新"
 
+msgid "Remind Later"
+msgstr "稍后提醒"
+
+msgid "Skip Version"
+msgstr "跳过此版本"
+
 msgid "(Latest)"
 msgstr "（最新的）"
 
@@ -20404,6 +20413,9 @@ msgstr "需要重新启动以加载新插件。您要立即重启吗？"
 
 msgid "Restart Now"
 msgstr "立即重启"
+
+msgid "Restart Later"
+msgstr "稍后重启"
 
 msgid "NO RAMMING AT ALL"
 msgstr "完全不挤压"
@@ -21022,18 +21034,6 @@ msgstr ""
 
 #~ msgid "Hotend"
 #~ msgstr "热端"
-
-#~ msgid "Skip for Now"
-#~ msgstr "暂时跳过"
-
-#~ msgid "Remind Later"
-#~ msgstr "稍后提醒"
-
-#~ msgid "Skip Version"
-#~ msgstr "跳过此版本"
-
-#~ msgid "Restart Later"
-#~ msgstr "稍后重启"
 
 #~ msgid "Select filament that installed to the left nozzle"
 #~ msgstr "选择安装在左侧喷嘴的耗材"

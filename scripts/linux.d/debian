@@ -12,8 +12,12 @@ REQUIRED_DEV_PACKAGES=(
     git
     gstreamer1.0-gtk3
     libcurl4-openssl-dev
+    libswscale-dev
+    libavutil-dev
+    libavcodec-dev
     libdbus-1-dev
     libglew-dev
+    libglu1-mesa-dev
     libgstreamerd-3-dev
     libgtk-3-dev
     libmspack-dev
@@ -25,8 +29,10 @@ REQUIRED_DEV_PACKAGES=(
     clang
     lld
     ninja-build
+    nasm
     texinfo
     wget
+    yasm
 )
 
 if [[ -n "$UPDATE_LIB" ]]

@@ -7,6 +7,7 @@
 #include "libslic3r/Utils.hpp"
 #include "NetworkAgent.hpp"
 #include "BBLNetworkPlugin.hpp"
+#include "BBLPrinterAgent.hpp"
 
 namespace Slic3r {
 
@@ -31,6 +32,7 @@ int invoke_on_all_cloud_agents(const std::map<std::string, std::shared_ptr<IClou
 }
 
 } // namespace
+
 
 // ============================================================================
 // Static methods - delegate to BBLNetworkPlugin
@@ -61,7 +63,23 @@ int NetworkAgent::initialize_network_module(bool using_backup, const std::string
 
 int NetworkAgent::unload_network_module() { return BBLNetworkPlugin::instance().unload(); }
 
-bool NetworkAgent::is_network_module_loaded() { return BBLNetworkPlugin::instance().is_loaded(); }
+bool NetworkAgent::is_network_module_loaded()
+{
+    auto module_lock = BBLNetworkPlugin::lock_module_for_call();
+    return BBLNetworkPlugin::instance().is_loaded();
+}
+
+int NetworkAgent::active_source_tunnels()
+{
+    auto module_lock = BBLNetworkPlugin::lock_module_for_call();
+    return BBLNetworkPlugin::instance().active_source_tunnels();
+}
+
+int NetworkAgent::active_forwarder_callbacks()
+{
+    auto module_lock = BBLNetworkPlugin::lock_module_for_call();
+    return BBLNetworkPlugin::instance().active_forwarder_callbacks();
+}
 
 #if defined(_MSC_VER) || defined(_WIN32)
 HMODULE NetworkAgent::get_bambu_source_entry() { return BBLNetworkPlugin::instance().get_bambu_source_entry(); }
@@ -69,7 +87,11 @@ HMODULE NetworkAgent::get_bambu_source_entry() { return BBLNetworkPlugin::instan
 void* NetworkAgent::get_bambu_source_entry() { return BBLNetworkPlugin::instance().get_bambu_source_entry(); }
 #endif
 
-std::string NetworkAgent::get_version() { return BBLNetworkPlugin::instance().get_version(); }
+std::string NetworkAgent::get_version()
+{
+    auto module_lock = BBLNetworkPlugin::lock_module_for_call();
+    return BBLNetworkPlugin::instance().get_version();
+}
 
 void* NetworkAgent::get_network_function(const char* name) { return BBLNetworkPlugin::instance().get_network_function(name); }
 
@@ -912,6 +934,15 @@ int NetworkAgent::start_sdcard_print(PrintParams params, OnUpdateStatusFn update
     if (m_printer_agent)
         return m_printer_agent->start_sdcard_print(params, update_fn, cancel_fn);
     return -1;
+}
+
+bool NetworkAgent::retry_last_print_request(const std::string& dev_id)
+{
+    auto bbl_printer_agent = std::dynamic_pointer_cast<BBLPrinterAgent>(m_printer_agent);
+    if (!bbl_printer_agent)
+        return false;
+
+    return bbl_printer_agent->retry_last_print_request(dev_id);
 }
 
 FilamentSyncMode NetworkAgent::get_filament_sync_mode() const

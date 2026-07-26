@@ -1,4 +1,5 @@
 #include "PresetUpdater.hpp"
+#include "SlicerLinuxRuntime/SlicerLinuxRuntimeConfig.hpp"
 
 #include <algorithm>
 #include <boost/filesystem/operations.hpp>
@@ -32,11 +33,11 @@
 #include "slic3r/GUI/I18N.hpp"
 #include "slic3r/GUI/UpdateDialogs.hpp"
 #include "slic3r/GUI/ConfigWizard.hpp"
-#include "slic3r/GUI/GUI_App.hpp"
 #include "slic3r/GUI/Plater.hpp"
 #include "slic3r/GUI/format.hpp"
 #include "slic3r/GUI/NotificationManager.hpp"
 #include "slic3r/Utils/Http.hpp"
+#include "slic3r/Utils/BBLNetworkPlugin.hpp"
 #include "slic3r/Config/Version.hpp"
 #include "slic3r/Config/Snapshot.hpp"
 #include "slic3r/GUI/MarkdownTip.hpp"
@@ -57,6 +58,7 @@ namespace Slic3r {
 
 static const char *INDEX_FILENAME = "index.idx";
 static const char *TMP_EXTENSION = ".data";
+static const char *PLUGINS_SUBPATH = "plugins";
 
 
 void copy_file_fix(const fs::path &source, const fs::path &target)
@@ -221,13 +223,13 @@ struct PresetUpdater::priv
     priv();
 
 	void set_download_prefs(AppConfig *app_config);
-	bool get_file(const std::string &url, const fs::path &target_path) const;
+	bool get_file(const std::string &url, const fs::path &target_path, bool linux_transport = false) const;
 	//BBS: refine preset update logic
     bool extract_file(const fs::path &source_path, const fs::path &dest_path = {});
 	void prune_tmps() const;
 	void sync_version() const;
 	void parse_version_string(const std::string& body) const;
-    void sync_resources(std::string http_url, std::map<std::string, Resource> &resources, bool check_patch = false,  std::string current_version="", std::string changelog_file="");
+    void sync_resources(std::string http_url, std::map<std::string, Resource> &resources, bool check_patch = false, std::string current_version="", std::string changelog_file="", bool linux_transport = false);
     void sync_vendor_config(const std::string& vendor_id);
     void sync_tooltip(std::string http_url, std::string language);
     void sync_plugins(std::string http_url, std::string plugin_version);
@@ -251,7 +253,7 @@ PresetUpdater::priv::priv()
 	, cancel(false)
 {
 	//BBS: refine preset updater logic
-	enabled_version_check = true;
+	enabled_version_check = false;
 	set_download_prefs(GUI::wxGetApp().app_config);
 	// Install indicies from resources. Only installs those that are either missing or older than in resources.
 	check_installed_vendor_profiles();
@@ -274,7 +276,7 @@ void PresetUpdater::priv::set_download_prefs(AppConfig *app_config)
 
 //BBS: refine the Preset Updater logic
 // Downloads a file (http get operation). Cancels if the Updater is being destroyed.
-bool PresetUpdater::priv::get_file(const std::string &url, const fs::path &target_path) const
+bool PresetUpdater::priv::get_file(const std::string &url, const fs::path &target_path, bool linux_transport) const
 {
     bool res = false;
     fs::path tmp_path = target_path;
@@ -285,27 +287,45 @@ bool PresetUpdater::priv::get_file(const std::string &url, const fs::path &targe
         target_path.string(),
         tmp_path.string());
 
-    Slic3r::Http::get(url)
-        .on_progress([this](Slic3r::Http::Progress, bool &cancel_http) {
-            if (cancel) {
-                cancel_http = true;
-            }
-        })
-        .on_error([&](std::string body, std::string error, unsigned http_status) {
-            (void)body;
-            BOOST_LOG_TRIVIAL(error) << format("[BBS Updater]getting: `%1%`: http status %2%, %3%",
-                url,
-                http_status,
-                error);
-        })
-        .on_complete([&](std::string body, unsigned /* http_status */) {
+    if (linux_transport) {
+        unsigned int status = 0;
+        std::string body;
+        std::string error;
+        const int rc = BBLNetworkPlugin::linux_runtime_http_get(
+            url,
+            {{"X-BBL-OS-Type", "linux"}},
+            &status,
+            &body,
+            &error);
+        if (rc != 0) {
+            BOOST_LOG_TRIVIAL(error) << format("[BBS Updater] Linux transport failed for `%1%`: status %2%, %3%", url, status, error);
+        } else if (!cancel) {
             fs::fstream file(tmp_path, std::ios::out | std::ios::binary | std::ios::trunc);
-            file.write(body.c_str(), body.size());
+            file.write(body.data(), static_cast<std::streamsize>(body.size()));
             file.close();
-            fs::rename(tmp_path, target_path);
-            res = true;
-        })
-        .perform_sync();
+            if (file.good()) {
+                fs::rename(tmp_path, target_path);
+                res = true;
+            }
+        }
+    } else {
+        Slic3r::Http::get(url)
+            .on_progress([this](Slic3r::Http::Progress, bool &cancel_http) {
+                if (cancel)
+                    cancel_http = true;
+            })
+            .on_error([&](std::string, std::string error, unsigned http_status) {
+                BOOST_LOG_TRIVIAL(error) << format("[BBS Updater]getting: `%1%`: http status %2%, %3%", url, http_status, error);
+            })
+            .on_complete([&](std::string body, unsigned) {
+                fs::fstream file(tmp_path, std::ios::out | std::ios::binary | std::ios::trunc);
+                file.write(body.data(), static_cast<std::streamsize>(body.size()));
+                file.close();
+                fs::rename(tmp_path, target_path);
+                res = true;
+            })
+            .perform_sync();
+    }
 
     return res;
 }
@@ -333,12 +353,26 @@ bool PresetUpdater::priv::extract_file(const fs::path &source_path, const fs::pa
     {
         if (mz_zip_reader_file_stat(&archive, i, &stat))
         {
-            std::string dest_file = parent_path+"/"+stat.m_filename;
+            fs::path relative(stat.m_filename);
+            if (relative.empty() || relative.is_absolute() || relative.has_root_name() || relative.has_root_directory()) {
+                BOOST_LOG_TRIVIAL(error) << "[Orca Updater]Unzip: unsafe archive path " << stat.m_filename;
+                close_zip_reader(&archive);
+                return false;
+            }
+            relative = relative.lexically_normal();
+            for (const auto& part : relative) {
+                if (part == "..") {
+                    BOOST_LOG_TRIVIAL(error) << "[Orca Updater]Unzip: unsafe archive path " << stat.m_filename;
+                    close_zip_reader(&archive);
+                    return false;
+                }
+            }
+            fs::path destination = fs::path(parent_path) / relative;
+            std::string dest_file = destination.string();
             if (stat.m_is_directory) {
-                fs::path dest_path(dest_file);
-                if (!fs::exists(dest_path))
-                    fs::create_directories(dest_path);
-				continue;
+                if (!fs::exists(destination))
+                    fs::create_directories(destination);
+                continue;
             }
             else if (stat.m_uncomp_size == 0) {
                 BOOST_LOG_TRIVIAL(warning) << "[Orca Updater]Unzip: invalid size for file "<<stat.m_filename;
@@ -346,6 +380,7 @@ bool PresetUpdater::priv::extract_file(const fs::path &source_path, const fs::pa
             }
             try
             {
+                fs::create_directories(destination.parent_path());
                 res = mz_zip_reader_extract_to_file(&archive, stat.m_file_index, dest_file.c_str(), 0);
                 if (!res) {
                     BOOST_LOG_TRIVIAL(error) << "[Orca Updater]extract file "<<stat.m_filename<<" to dest "<<dest_file<<" failed";
@@ -483,7 +518,7 @@ void PresetUpdater::priv::parse_version_string(const std::string& body) const
 //BBS: refine the Preset Updater logic
 // Download vendor indices. Also download new bundles if an index indicates there's a new one available.
 // Both are saved in cache.
-void PresetUpdater::priv::sync_resources(std::string http_url, std::map<std::string, Resource> &resources, bool check_patch, std::string current_version_str, std::string changelog_file)
+void PresetUpdater::priv::sync_resources(std::string http_url, std::map<std::string, Resource> &resources, bool check_patch, std::string current_version_str, std::string changelog_file, bool linux_transport)
 {
     std::map<std::string, Resource>    resource_list;
 
@@ -504,62 +539,60 @@ void PresetUpdater::priv::sync_resources(std::string http_url, std::map<std::str
 
     std::string url = http_url;
     url += query_params;
-    Slic3r::Http http = Slic3r::Http::get(url);
-    BOOST_LOG_TRIVIAL(info) << boost::format("[Orca Updater]: sync_resources request_url: %1%")%url;
-    http.on_progress([this](Slic3r::Http::Progress, bool &cancel_http) {
-            if (cancel) {
-                cancel_http = true;
+    BOOST_LOG_TRIVIAL(info) << boost::format("[Orca Updater]: sync_resources request_url: %1%") % url;
+    auto parse_resource_manifest = [&resource_list](const std::string& body) {
+        try {
+            json response = json::parse(body);
+            if (response.value("message", std::string()) != "success") {
+                BOOST_LOG_TRIVIAL(error) << "[Orca Updater]: resource manifest did not return success";
+                return;
             }
-        })
-        .on_complete([this, &resource_list, resources](std::string body, unsigned) {
-            try {
-                BOOST_LOG_TRIVIAL(info) << "[Orca Updater]: request_resources, body=" << body;
-
-                json        j       = json::parse(body);
-                std::string message = j["message"].get<std::string>();
-
-                if (message == "success") {
-                    json resource = j.at("resources");
-                    if (resource.is_array()) {
-                        for (auto iter = resource.begin(); iter != resource.end(); iter++) {
-                            std::string version;
-                            std::string url;
-                            std::string resource;
-                            std::string description;
-                            bool force_upgrade = false;
-                            for (auto sub_iter = iter.value().begin(); sub_iter != iter.value().end(); sub_iter++) {
-                                if (boost::iequals(sub_iter.key(), "type")) {
-                                    resource = sub_iter.value();
-                                    BOOST_LOG_TRIVIAL(trace) << "[Orca Updater]: get version of settings's type, " << sub_iter.value();
-                                } else if (boost::iequals(sub_iter.key(), "version")) {
-                                    version = sub_iter.value();
-                                } else if (boost::iequals(sub_iter.key(), "description")) {
-                                    description = sub_iter.value();
-                                } else if (boost::iequals(sub_iter.key(), "url")) {
-                                    url = sub_iter.value();
-                                }
-                                else if (boost::iequals(sub_iter.key(), "force_update")) {
-                                    force_upgrade = sub_iter.value();
-                                }
-                            }
-                            BOOST_LOG_TRIVIAL(info) << "[Orca Updater]: get type " << resource << ", version " << version << ", url " << url<<", force_update "<<force_upgrade;
-
-                            resource_list.emplace(resource, Resource{version, description, url, force_upgrade});
-                        }
-                    }
-                } else {
-                    BOOST_LOG_TRIVIAL(error) << "[Orca Updater]: get version of settings failed, body=" << body;
-                }
-            } catch (std::exception &e) {
-                BOOST_LOG_TRIVIAL(error) << (boost::format("[Orca Updater]: get version of settings failed, exception=%1% body=%2%") % e.what() % body).str();
-            } catch (...) {
-                BOOST_LOG_TRIVIAL(error) << "[Orca Updater]: get version of settings failed, body=" << body;
+            const auto entries = response.value("resources", json::array());
+            if (!entries.is_array())
+                return;
+            for (const auto& entry : entries) {
+                std::string resource = entry.value("type", std::string());
+                boost::to_lower(resource);
+                Resource value{
+                    entry.value("version", std::string()),
+                    entry.value("description", std::string()),
+                    entry.value("url", std::string()),
+                    entry.value("force_update", false)
+                };
+                if (!resource.empty())
+                    resource_list[resource] = std::move(value);
             }
-        })
-        .on_error([&](std::string body, std::string error, unsigned status) {
-            BOOST_LOG_TRIVIAL(error) << boost::format("[Orca Updater]: status=%1%, error=%2%, body=%3%") % status % error % body;
-        })
-        .perform_sync();
+        } catch (const std::exception& e) {
+            BOOST_LOG_TRIVIAL(error) << "[Orca Updater]: invalid resource manifest: " << e.what();
+        }
+    };
+
+    if (linux_transport) {
+        unsigned int status = 0;
+        std::string body;
+        std::string error;
+        const int rc = BBLNetworkPlugin::linux_runtime_http_get(
+            url,
+            {{"X-BBL-OS-Type", "linux"}},
+            &status,
+            &body,
+            &error);
+        if (rc != 0)
+            BOOST_LOG_TRIVIAL(error) << "[Orca Updater]: Linux manifest transport failed: status=" << status << ", error=" << error;
+        else
+            parse_resource_manifest(body);
+    } else {
+        Slic3r::Http::get(url)
+            .on_progress([this](Slic3r::Http::Progress, bool &cancel_http) {
+                if (cancel)
+                    cancel_http = true;
+            })
+            .on_complete([&](std::string body, unsigned) { parse_resource_manifest(body); })
+            .on_error([&](std::string, std::string error, unsigned status) {
+                BOOST_LOG_TRIVIAL(error) << boost::format("[Orca Updater]: status=%1%, error=%2%") % status % error;
+            })
+            .perform_sync();
+    }
 
     for (auto & resource_it : resources) {
         if (cancel) { return; }
@@ -592,7 +625,7 @@ void PresetUpdater::priv::sync_resources(std::string http_url, std::map<std::str
             std::string online_url      = resource_update->second.url;
             std::string cache_file_path = (fs::temp_directory_path() / (fs::unique_path().string() + TMP_EXTENSION)).string();
             BOOST_LOG_TRIVIAL(info) << "[Orca Updater]Downloading resource: " << resource_name << ", version " << online_version.to_string();
-            if (!get_file(online_url, cache_file_path)) {
+            if (!get_file(online_url, cache_file_path, linux_transport)) {
                 BOOST_LOG_TRIVIAL(warning) << "[Orca Updater]download resource " << resource_name << " failed, url: " << online_url;
                 continue;
             }
@@ -782,25 +815,30 @@ void PresetUpdater::priv::sync_tooltip(std::string http_url, std::string languag
 // return true means there are plugins files
 bool PresetUpdater::priv::get_cached_plugins_version(std::string& cached_version, bool &force)
 {
-    // The OTA plugin cache lives in its own ota/plugins subfolder; the update dialog
-    // (Plater::priv::update_plugin_when_launch) reads the changelog from the same place.
-    auto cache_folder = cache_path / "plugins";
+    // The OTA plugin cache lives in ota/plugins.
+    auto cache_folder = cache_path / PLUGINS_SUBPATH;
     std::string network_library, player_library, live555_library;
     bool has_plugins = false;
 
+    if (Slic3r::SlicerLinuxRuntime::should_select_linux_component_package("plugins")) {
+        network_library = cache_folder.string() + "/libbambu_networking.so";
+        player_library  = cache_folder.string() + "/libBambuSource.so";
+        live555_library = cache_folder.string() + "/liblive555.so";
+    } else {
 #if defined(_MSC_VER) || defined(_WIN32)
-    network_library = cache_folder.string() + "/bambu_networking.dll";
-    player_library  = cache_folder.string() + "/BambuSource.dll";
-    live555_library = cache_folder.string() + "/live555.dll";
+        network_library = cache_folder.string() + "/bambu_networking.dll";
+        player_library  = cache_folder.string() + "/BambuSource.dll";
+        live555_library = cache_folder.string() + "/live555.dll";
 #elif defined(__WXMAC__)
-    network_library = cache_folder.string() + "/libbambu_networking.dylib";
-    player_library  = cache_folder.string() + "/libBambuSource.dylib";
-    live555_library = cache_folder.string() + "/liblive555.dylib";
+        network_library = cache_folder.string() + "/libbambu_networking.dylib";
+        player_library  = cache_folder.string() + "/libBambuSource.dylib";
+        live555_library = cache_folder.string() + "/liblive555.dylib";
 #else
-    network_library = cache_folder.string() + "/libbambu_networking.so";
-    player_library  = cache_folder.string() + "/libBambuSource.so";
-    live555_library = cache_folder.string() + "/liblive555.so";
+        network_library = cache_folder.string() + "/libbambu_networking.so";
+        player_library  = cache_folder.string() + "/libBambuSource.so";
+        live555_library = cache_folder.string() + "/liblive555.so";
 #endif
+    }
 
     std::string changelog_file = cache_folder.string() + "/network_plugins.json";
     if (boost::filesystem::exists(network_library)
@@ -836,7 +874,9 @@ void PresetUpdater::priv::sync_plugins(std::string http_url, std::string plugin_
         BOOST_LOG_TRIVIAL(info) << "non need to sync plugins for there is no plugins currently.";
         return;
     }
-    std::string curr_version = GUI::wxGetApp().use_legacy_network_plugin() ? BAMBU_NETWORK_AGENT_VERSION_LEGACY : get_latest_network_version();
+    std::string curr_version = GUI::wxGetApp().use_legacy_network_plugin()
+        ? BAMBU_NETWORK_AGENT_VERSION_LEGACY
+        : SLIC3R_VERSION;
     std::string using_version = curr_version.substr(0, 9) + "00";
     auto cache_plugin_folder = cache_path / "plugins";
 
@@ -887,43 +927,45 @@ void PresetUpdater::priv::sync_plugins(std::string http_url, std::string plugin_
         }
 
         if (need_delete_cache) {
+            auto cache_plugin_folder = cache_path / PLUGINS_SUBPATH;
             BOOST_LOG_TRIVIAL(info) << "[remove_old_networking_plugins] remove the plugins directory " << cache_plugin_folder.string();
             try {
                 fs::remove_all(cache_plugin_folder);
+                fs::create_directories(cache_plugin_folder);
             } catch (...) {
-                BOOST_LOG_TRIVIAL(error) << "Failed removing the plugins directory " << cache_plugin_folder.string();
+                BOOST_LOG_TRIVIAL(error) << "Failed resetting the plugins directory " << cache_plugin_folder.string();
             }
         }
     }
 
+    const bool linux_transport = Slic3r::SlicerLinuxRuntime::should_select_linux_component_package("plugins");
 #if defined(__WINDOWS__)
-    if (GUI::wxGetApp().is_running_on_arm64() && !GUI::wxGetApp().use_legacy_network_plugin()) {
-        //set to arm64 for plugins
-        std::map<std::string, std::string> current_headers = Slic3r::Http::get_extra_headers();
+    const bool use_windows_arm_package = !linux_transport && GUI::wxGetApp().is_running_on_arm64()
+        && !GUI::wxGetApp().use_legacy_network_plugin();
+    if (use_windows_arm_package) {
+        auto current_headers = Slic3r::Http::get_extra_headers();
         current_headers["X-BBL-OS-Type"] = "windows_arm";
-
         Slic3r::Http::set_extra_headers(current_headers);
-        BOOST_LOG_TRIVIAL(info) << boost::format("set X-BBL-OS-Type to windows_arm");
+        BOOST_LOG_TRIVIAL(info) << "set X-BBL-OS-Type to windows_arm";
     }
 #endif
     try {
+        auto cache_plugin_folder = cache_path / PLUGINS_SUBPATH;
         std::map<std::string, Resource> resources
         {
             {"slicer/plugins/cloud", { using_version, "", "", false, cache_plugin_folder.string()}}
         };
-        sync_resources(http_url, resources, true, plugin_version, "network_plugins.json");
+        sync_resources(http_url, resources, true, plugin_version, "network_plugins.json", linux_transport);
     }
     catch (std::exception& e) {
         BOOST_LOG_TRIVIAL(warning) << format("[Orca Updater] sync_plugins: %1%", e.what());
     }
 #if defined(__WINDOWS__)
-    if (GUI::wxGetApp().is_running_on_arm64() && !GUI::wxGetApp().use_legacy_network_plugin()) {
-        //set back
-        std::map<std::string, std::string> current_headers = Slic3r::Http::get_extra_headers();
+    if (use_windows_arm_package) {
+        auto current_headers = Slic3r::Http::get_extra_headers();
         current_headers["X-BBL-OS-Type"] = "windows";
-
         Slic3r::Http::set_extra_headers(current_headers);
-        BOOST_LOG_TRIVIAL(info) << boost::format("set X-BBL-OS-Type back to windows");
+        BOOST_LOG_TRIVIAL(info) << "set X-BBL-OS-Type back to windows";
     }
 #endif
 

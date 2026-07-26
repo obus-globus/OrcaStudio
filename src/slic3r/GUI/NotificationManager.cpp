@@ -2388,7 +2388,7 @@ void NotificationManager::SharedProfilesNotification::render_text(ImGuiWrapper& 
 
 bool NotificationManager::SharedProfilesNotification::on_text_click()
 {
-	wxLaunchDefaultBrowser(m_explore_url);
+	wxGetApp().open_browser_with_warning_dialog(m_explore_url);
 	return false;
 }
 

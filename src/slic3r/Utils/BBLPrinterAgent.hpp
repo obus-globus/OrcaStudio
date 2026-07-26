@@ -3,8 +3,13 @@
 
 #include "IPrinterAgent.hpp"
 #include "ICloudServiceAgent.hpp"
+#include <atomic>
+#include <cstdint>
 #include <string>
 #include <memory>
+#include <mutex>
+#include <thread>
+#include <vector>
 
 namespace Slic3r {
 
@@ -52,12 +57,6 @@ public:
     std::string get_user_selected_machine() override;
     int set_user_selected_machine(std::string dev_id) override;
 
-    // Subscriptions
-    int start_subscribe(std::string module) override;
-    int stop_subscribe(std::string module) override;
-    int add_subscribe(std::vector<std::string> dev_list) override;
-    int del_subscribe(std::vector<std::string> dev_list) override;
-
     /**
      * Get agent information.
      *
@@ -84,8 +83,50 @@ public:
     int set_queue_on_main_fn(QueueOnMainFn fn) override;
     FilamentSyncMode get_filament_sync_mode() const override;
 
+    bool retry_last_print_request(const std::string& dev_id);
+
 private:
+    enum class LastPrintRequestType {
+        none,
+        start_print,
+        start_local_print_with_record,
+        start_local_print,
+        start_sdcard_print,
+    };
+
+    struct LastPrintRequest {
+        LastPrintRequestType type = LastPrintRequestType::none;
+        PrintParams params{};
+        OnUpdateStatusFn update_fn = nullptr;
+        WasCancelledFn cancel_fn = nullptr;
+        OnWaitFn wait_fn = nullptr;
+        int retry_count = 0;
+        bool retry_in_flight = false;
+        std::uint64_t generation = 0;
+    };
+
+    int invoke_print_request_untracked(LastPrintRequestType type,
+                                       PrintParams params,
+                                       OnUpdateStatusFn update_fn,
+                                       WasCancelledFn cancel_fn,
+                                       OnWaitFn wait_fn);
+    void remember_last_print_request(LastPrintRequestType type,
+                                     const PrintParams& params,
+                                     OnUpdateStatusFn update_fn,
+                                     WasCancelledFn cancel_fn,
+                                     OnWaitFn wait_fn);
+
     std::shared_ptr<ICloudServiceAgent> m_cloud_agent;
+    mutable std::mutex m_last_print_request_mutex;
+    LastPrintRequest m_last_print_request;
+    struct RetryWorker {
+        std::thread thread;
+        std::shared_ptr<std::atomic<bool>> done;
+    };
+
+    std::mutex m_retry_threads_mutex;
+    std::vector<RetryWorker> m_retry_workers;
+    std::atomic<bool> m_retry_shutdown{false};
 };
 
 } // namespace Slic3r

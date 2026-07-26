@@ -1022,6 +1022,22 @@ wxBoxSizer *PreferencesDialog::create_item_checkbox(wxString title, wxString too
 
      //// save config
     checkbox->Bind(wxEVT_TOGGLEBUTTON, [this, checkbox, param](wxCommandEvent &e) {
+        if (param == "installed_networking") {
+            const bool requested = checkbox->GetValue();
+            if (requested) {
+                // Do not persist "installed" before the explicit installation job
+                // succeeds. The dialog is the user's opt-in action on every platform.
+                app_config->set_bool(param, false);
+                app_config->save();
+                GUI::wxGetApp().CallAfter([] { GUI::wxGetApp().ShowDownNetPluginDlg(); });
+            } else {
+                app_config->set_bool(param, false);
+                app_config->save();
+                GUI::wxGetApp().CallAfter([] { GUI::wxGetApp().restart_networking(); });
+            }
+            return;
+        }
+
         app_config->set_bool(param, checkbox->GetValue());
         app_config->save();
 
@@ -1095,13 +1111,6 @@ wxBoxSizer *PreferencesDialog::create_item_checkbox(wxString title, wxString too
                 wxGetApp().associate_files(L"step");
             } else {
                 wxGetApp().disassociate_files(L"step");
-            }
-        }
-
-        if (param == "installed_networking") {
-            bool pbool = app_config->get_bool("installed_networking");
-            if (pbool) {
-                GUI::wxGetApp().CallAfter([] { GUI::wxGetApp().ShowDownNetPluginDlg(); });
             }
         }
 
@@ -1952,9 +1961,6 @@ void PreferencesDialog::create_items()
     //// ONLINE > Update & sync
     g_sizer->Add(create_item_title(_L("Update & sync")), 1, wxEXPAND);
 
-    auto item_stable_updates   = create_item_checkbox(_L("Check for stable updates only"), "", "check_stable_update_only");
-    g_sizer->Add(item_stable_updates);
-
     auto item_user_sync        = create_item_checkbox(_L("Auto sync user presets (Printer/Filament/Process)"), "", "sync_user_preset");
     g_sizer->Add(item_user_sync);
 
@@ -2008,7 +2014,7 @@ void PreferencesDialog::create_items()
         auto item_open_default_apps = create_item_button(
             _L("File associations for the Microsoft Store version are managed by Windows Settings."),
             _L("Open Windows Default Apps Settings"), "", "",
-            []() { wxLaunchDefaultBrowser("ms-settings:defaultapps"); });
+            []() { wxGetApp().open_browser_with_warning_dialog("ms-settings:defaultapps"); });
         g_sizer->Add(item_open_default_apps);
 
         g_sizer->AddSpacer(FromDIP(10));

@@ -653,6 +653,7 @@ set(SLIC3R_GUI_SOURCES
     Utils/AstroBox.cpp
     Utils/AstroBox.hpp
     Utils/bambu_networking.hpp
+    Utils/SlicerLinuxRuntime/SlicerLinuxRuntimeConfig.cpp
     Utils/Bonjour.cpp
     Utils/Bonjour.hpp
     Utils/CalibUtils.cpp
@@ -756,6 +757,7 @@ set(SLIC3R_GUI_SOURCES
 
 add_subdirectory(GUI/DeviceCore)
 add_subdirectory(GUI/DeviceTab)
+add_subdirectory(Utils/SlicerLinuxRuntime)
 
 if (WIN32)
     list(APPEND SLIC3R_GUI_SOURCES
@@ -779,14 +781,20 @@ if (APPLE)
             GUI/DeepLinkHandlerMac.mm
             GUI/DeepLinkHandlerMac.h
             GUI/GUI_UtilsMac.mm
-            GUI/wxMediaCtrl2.mm
-            GUI/wxMediaCtrl2.h
+            GUI/AVVideoDecoder.cpp
+            GUI/AVVideoDecoder.hpp
+            GUI/wxMediaCtrl3.cpp
+            GUI/wxMediaCtrl3.h
         )
     FIND_LIBRARY(DISKARBITRATION_LIBRARY DiskArbitration)
 else ()
     list(APPEND SLIC3R_GUI_SOURCES
+            GUI/AVVideoDecoder.cpp
+            GUI/AVVideoDecoder.hpp
             GUI/wxMediaCtrl2.cpp
             GUI/wxMediaCtrl2.h
+            GUI/wxMediaCtrl3.cpp
+            GUI/wxMediaCtrl3.h
         )
 endif ()
 
@@ -853,13 +861,26 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
 endif ()
 
 if (MSVC)
-    target_link_libraries(libslic3r_gui Setupapi.lib)
+    find_library(FFMPEG_AVCODEC_LIB NAMES avcodec avcodec-61 PATHS ${CMAKE_PREFIX_PATH} PATH_SUFFIXES lib NO_DEFAULT_PATH)
+    find_library(FFMPEG_AVUTIL_LIB  NAMES avutil avutil-59 PATHS ${CMAKE_PREFIX_PATH} PATH_SUFFIXES lib NO_DEFAULT_PATH)
+    find_library(FFMPEG_SWSCALE_LIB NAMES swscale swscale-8 PATHS ${CMAKE_PREFIX_PATH} PATH_SUFFIXES lib NO_DEFAULT_PATH)
+    if (NOT FFMPEG_AVCODEC_LIB OR NOT FFMPEG_AVUTIL_LIB OR NOT FFMPEG_SWSCALE_LIB)
+        message(FATAL_ERROR "Missing FFmpeg import libs for Windows build. Expected avcodec/avutil/swscale under ${CMAKE_PREFIX_PATH}/lib")
+    endif ()
+    target_link_libraries(libslic3r_gui Setupapi.lib dwmapi.lib ${FFMPEG_AVCODEC_LIB} ${FFMPEG_AVUTIL_LIB} ${FFMPEG_SWSCALE_LIB})
 elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(LIBAV REQUIRED IMPORTED_TARGET
+        libavcodec
+        libswscale
+        libavutil
+    )
     FIND_LIBRARY(WAYLAND_SERVER_LIBRARIES NAMES wayland-server)
     FIND_LIBRARY(WAYLAND_EGL_LIBRARIES    NAMES wayland-egl)
     FIND_LIBRARY(WAYLAND_CLIENT_LIBRARIES NAMES wayland-client)
     find_package(CURL REQUIRED)
     target_link_libraries(libslic3r_gui
+        PkgConfig::LIBAV
         OpenGL::EGL
         ${DBUS_LIBRARIES}
         ${WAYLAND_SERVER_LIBRARIES}
@@ -868,10 +889,16 @@ elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
         ${CURL_LIBRARIES}
     )
 elseif (APPLE)
+    find_library(FFMPEG_AVCODEC_LIB NAMES avcodec PATHS ${CMAKE_PREFIX_PATH} PATH_SUFFIXES lib NO_DEFAULT_PATH)
+    find_library(FFMPEG_AVUTIL_LIB  NAMES avutil  PATHS ${CMAKE_PREFIX_PATH} PATH_SUFFIXES lib NO_DEFAULT_PATH)
+    find_library(FFMPEG_SWSCALE_LIB NAMES swscale PATHS ${CMAKE_PREFIX_PATH} PATH_SUFFIXES lib NO_DEFAULT_PATH)
+    if (NOT FFMPEG_AVCODEC_LIB OR NOT FFMPEG_AVUTIL_LIB OR NOT FFMPEG_SWSCALE_LIB)
+        message(FATAL_ERROR "Missing FFmpeg libs for macOS liveview decoding. Expected avcodec/avutil/swscale under ${CMAKE_PREFIX_PATH}/lib")
+    endif ()
     if(CMAKE_VERSION VERSION_GREATER_EQUAL "4.0")
-        target_link_libraries(libslic3r_gui ${DISKARBITRATION_LIBRARY} "-framework Security" "-framework OpenGL")
+        target_link_libraries(libslic3r_gui ${DISKARBITRATION_LIBRARY} "-framework Security" "-framework OpenGL" ${FFMPEG_AVCODEC_LIB} ${FFMPEG_AVUTIL_LIB} ${FFMPEG_SWSCALE_LIB})
     else()
-        target_link_libraries(libslic3r_gui ${DISKARBITRATION_LIBRARY} "-framework Security")
+        target_link_libraries(libslic3r_gui ${DISKARBITRATION_LIBRARY} "-framework Security" ${FFMPEG_AVCODEC_LIB} ${FFMPEG_AVUTIL_LIB} ${FFMPEG_SWSCALE_LIB})
     endif()
 endif()
 

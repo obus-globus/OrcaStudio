@@ -55,6 +55,8 @@ public:
     
     void AssignImageList(wxImageList *imageList);
 
+    void SetItemPaddingSize(unsigned int item, const wxSize &size);
+
     void SetItemTextColour(unsigned int item, const StateColor& col);
 
     /* fakes */

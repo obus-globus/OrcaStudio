@@ -6026,23 +6026,21 @@ int CLI::run(int argc, char **argv)
                                     }
 
                                     for (int f_index = 0; f_index < plate_filaments.size(); f_index++) {
-                                        for (int f_index = 0; f_index < plate_filaments.size(); f_index++) {
-                                            if (plate_filaments[f_index] <= filament_count) {
-                                                int filament_extruder = filament_maps[plate_filaments[f_index] - 1];
-                                                std::string filament_type;
-                                                m_print_config.get_filament_type(filament_type, plate_filaments[f_index] - 1);
-                                                auto *filament_printable_status = dynamic_cast<const ConfigOptionInts *>(m_print_config.option("filament_printable"));
-                                                if (filament_printable_status && (filament_printable_status->values.size() >= plate_filaments[f_index])) {
-                                                    int status = filament_printable_status->values.at(plate_filaments[f_index] - 1);
-                                                    if (!(status >> (filament_extruder - 1) & 1)) {
-                                                        BOOST_LOG_TRIVIAL(error)
-                                                            << boost::format(
-                                                                   "plate %1% : filament %2% can not be printed on extruder %3%, under manual mode for multi extruder printer") %
-                                                                   (index + 1) % filament_type % filament_extruder;
-                                                        record_exit_reson(outfile_dir, CLI_FILAMENTS_NOT_SUPPORTED_BY_EXTRUDER, index + 1,
-                                                                          cli_errors[CLI_FILAMENTS_NOT_SUPPORTED_BY_EXTRUDER], sliced_info);
-                                                        flush_and_exit(CLI_FILAMENTS_NOT_SUPPORTED_BY_EXTRUDER);
-                                                    }
+                                        if (plate_filaments[f_index] <= filament_count) {
+                                            int filament_extruder = filament_maps[plate_filaments[f_index] - 1];
+                                            std::string filament_type;
+                                            m_print_config.get_filament_type(filament_type, plate_filaments[f_index] - 1);
+                                            auto *filament_printable_status = dynamic_cast<const ConfigOptionInts *>(m_print_config.option("filament_printable"));
+                                            if (filament_printable_status && (filament_printable_status->values.size() >= plate_filaments[f_index])) {
+                                                int status = filament_printable_status->values.at(plate_filaments[f_index] - 1);
+                                                if (!(status >> (filament_extruder - 1) & 1)) {
+                                                    BOOST_LOG_TRIVIAL(error)
+                                                        << boost::format(
+                                                               "plate %1% : filament %2% can not be printed on extruder %3%, under manual mode for multi extruder printer") %
+                                                               (index + 1) % filament_type % filament_extruder;
+                                                    record_exit_reson(outfile_dir, CLI_FILAMENTS_NOT_SUPPORTED_BY_EXTRUDER, index + 1,
+                                                                      cli_errors[CLI_FILAMENTS_NOT_SUPPORTED_BY_EXTRUDER], sliced_info);
+                                                    flush_and_exit(CLI_FILAMENTS_NOT_SUPPORTED_BY_EXTRUDER);
                                                 }
                                             }
                                         }

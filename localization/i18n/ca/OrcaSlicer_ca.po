@@ -20298,6 +20298,9 @@ msgstr "Versió a instal·lar:"
 msgid "Download and Install"
 msgstr "Descarrega i instal·la"
 
+msgid "Skip for Now"
+msgstr "Omet per ara"
+
 msgid "A new version of the Bambu Network Plug-in is available."
 msgstr "Hi ha disponible una nova versió del connector de xarxa Bambu."
 
@@ -20314,6 +20317,12 @@ msgstr "No tornis a preguntar"
 msgid "Update Now"
 msgstr "Actualitza ara"
 
+msgid "Remind Later"
+msgstr "Recorda més tard"
+
+msgid "Skip Version"
+msgstr "Omet versió"
+
 msgid "(Latest)"
 msgstr "(Última)"
 
@@ -20328,6 +20337,9 @@ msgstr "Cal un reinici per carregar el nou connector. Voleu reiniciar ara?"
 
 msgid "Restart Now"
 msgstr "Reinicia ara"
+
+msgid "Restart Later"
+msgstr "Reinicia més tard"
 
 msgid "NO RAMMING AT ALL"
 msgstr "SENSE EMPENTA"
@@ -20938,18 +20950,6 @@ msgstr ""
 
 #~ msgid "Hotend"
 #~ msgstr "Hotend"
-
-#~ msgid "Skip for Now"
-#~ msgstr "Omet per ara"
-
-#~ msgid "Remind Later"
-#~ msgstr "Recorda més tard"
-
-#~ msgid "Skip Version"
-#~ msgstr "Omet versió"
-
-#~ msgid "Restart Later"
-#~ msgstr "Reinicia més tard"
 
 #~ msgid "Select filament that installed to the left nozzle"
 #~ msgstr "Seleccioneu el filament instal·lat al broquet esquerre"
@@ -22774,3 +22774,11 @@ msgstr ""
 
 #~ msgid "End end: "
 #~ msgstr "Final: "
+
+#: src/slic3r/GUI/ConfigWizard.cpp:506 resources/web/guide/1/index.html:20
+msgid "Welcome to BambuStudio with OrcaSlicer changes"
+msgstr "Benvingut a BambuStudio amb canvis d'OrcaSlicer"
+
+#: src/slic3r/GUI/ConfigWizard.cpp:507
+msgid "Hello, welcome to BambuStudio with OrcaSlicer changes! This configuration wizard helps you with the initial configuration; just a few settings and you will be ready to print."
+msgstr "Hola, benvingut a BambuStudio amb canvis d'OrcaSlicer! Aquest assistent de configuració us ajuda amb la configuració inicial; només uns quants paràmetres i estareu a punt per imprimir."

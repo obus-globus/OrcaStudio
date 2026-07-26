@@ -20075,6 +20075,9 @@ msgstr "Version à installer :"
 msgid "Download and Install"
 msgstr "Télécharger et installer"
 
+msgid "Skip for Now"
+msgstr "Ignorer pour le moment"
+
 msgid "A new version of the Bambu Network Plug-in is available."
 msgstr "Une nouvelle version du plug-in réseau Bambu est disponible."
 
@@ -20091,6 +20094,12 @@ msgstr "Ne plus demander"
 msgid "Update Now"
 msgstr "Mettre à jour maintenant"
 
+msgid "Remind Later"
+msgstr "Rappeler plus tard"
+
+msgid "Skip Version"
+msgstr "Ignorer la version"
+
 msgid "(Latest)"
 msgstr "(Dernière)"
 
@@ -20105,6 +20114,9 @@ msgstr "Un redémarrage est nécessaire pour charger le nouveau plug-in. Souhait
 
 msgid "Restart Now"
 msgstr "Redémarrer maintenant"
+
+msgid "Restart Later"
+msgstr "Redémarrer plus tard"
 
 msgid "NO RAMMING AT ALL"
 msgstr "AUCUN BOURRAGE"
@@ -20714,18 +20726,6 @@ msgstr ""
 
 #~ msgid "Hotend"
 #~ msgstr "Hotend"
-
-#~ msgid "Skip for Now"
-#~ msgstr "Ignorer pour le moment"
-
-#~ msgid "Remind Later"
-#~ msgstr "Rappeler plus tard"
-
-#~ msgid "Skip Version"
-#~ msgstr "Ignorer la version"
-
-#~ msgid "Restart Later"
-#~ msgstr "Redémarrer plus tard"
 
 #~ msgid "Select filament that installed to the left nozzle"
 #~ msgstr "Sélectionner le filament installé sur la buse gauche"

@@ -2,6 +2,7 @@
 #include "GUI_Utils.hpp"
 #include "I18N.hpp"
 #include <set>
+#include "GUI_App.hpp"
 
 
 namespace Slic3r { namespace GUI {
@@ -241,9 +242,9 @@ void PrePrintChecker::add_with_checkbox(PrintDialogStatus state, wxString msg, w
         info.type = prePrintInfoType::Filament;
     }
 
-    info.msg              = msg;
-    info.checkbox_label   = checkbox_label;
-    info.checkbox_checked = checked;
+    info.msg               = msg;
+    info.checkbox_label    = checkbox_label;
+    info.checkbox_checked  = checked;
     info.checkbox_callback = checkbox_callback;
 
     switch (info.type) {
@@ -346,7 +347,7 @@ bool PrinterMsgPanel::UpdateInfos(const std::vector<prePrintInfo>& infos)
                 label->SetLabel(info.msg + " " + _L("Please refer to Wiki before use->"));
                 label->Bind(wxEVT_ENTER_WINDOW, [this](auto& e) { SetCursor(wxCURSOR_HAND); });
                 label->Bind(wxEVT_LEAVE_WINDOW, [this](auto& e) { SetCursor(wxCURSOR_ARROW); });
-                label->Bind(wxEVT_LEFT_DOWN, [info](wxMouseEvent& event) { wxLaunchDefaultBrowser(info.wiki_url); });
+                label->Bind(wxEVT_LEFT_DOWN, [info](wxMouseEvent& event) { wxGetApp().open_browser_with_warning_dialog(info.wiki_url); });
             }
 
             label->Wrap(this->GetMinSize().GetWidth());

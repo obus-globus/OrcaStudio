@@ -48,7 +48,7 @@ static void set_prefered_map_mode(FilamentMapMode mode)
 
 bool play_dual_extruder_slice_video()
 {
-    if (wxLaunchDefaultBrowser("https://e.bambulab.com/t?c=HDB24RlwSmt77YFH")) {
+    if (wxGetApp().open_browser_with_warning_dialog("https://e.bambulab.com/t?c=HDB24RlwSmt77YFH")) {
         BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format("Video is being played using the system's default browser.");
         return true;
     }
@@ -59,7 +59,7 @@ bool play_dual_extruder_slice_video()
 bool play_dual_extruder_print_tpu_video()
 {
     const wxString video_url = "https://e.bambulab.com/t?c=fwWqpBg37Liel92N";
-    if (wxLaunchDefaultBrowser(video_url)){
+    if (wxGetApp().open_browser_with_warning_dialog(video_url)){
         BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format("Print Tpu Video is being played using the system's default browser.");
         return true;
     }
@@ -69,7 +69,7 @@ bool play_dual_extruder_print_tpu_video()
 
 bool open_filament_group_wiki()
 {
-    if (wxLaunchDefaultBrowser("https://e.bambulab.com/t?c=mOkvsXkJ9pldGYp9")) {
+    if (wxGetApp().open_browser_with_warning_dialog("https://e.bambulab.com/t?c=mOkvsXkJ9pldGYp9")) {
         BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format("Wiki is being displayed using the system's default browser.");
         return true;
     }

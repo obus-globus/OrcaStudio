@@ -14,7 +14,7 @@
             ProcessorArchitecture="@MSIX_ARCH@" />
 
   <Properties>
-    <DisplayName>OrcaSlicer</DisplayName>
+    <DisplayName>OrcaStudio</DisplayName>
     <PublisherDisplayName>@MSIX_PUBLISHER_DISPLAY_NAME@</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
     <!-- Keep config in the real %APPDATA%\OrcaSlicer so it survives uninstall and
@@ -24,7 +24,7 @@
     <desktop6:FileSystemWriteVirtualization>disabled</desktop6:FileSystemWriteVirtualization>
     <virtualization:FileSystemWriteVirtualization>
       <virtualization:ExcludedDirectories>
-        <virtualization:ExcludedDirectory>$(KnownFolder:RoamingAppData)\OrcaSlicer</virtualization:ExcludedDirectory>
+        <virtualization:ExcludedDirectory>$(KnownFolder:RoamingAppData)\BambuStudio_OrcaSlicer</virtualization:ExcludedDirectory>
       </virtualization:ExcludedDirectories>
     </virtualization:FileSystemWriteVirtualization>
   </Properties>
@@ -38,16 +38,16 @@
   </Resources>
 
   <Applications>
-    <Application Id="OrcaSlicer" Executable="orca-slicer.exe" EntryPoint="Windows.FullTrustApplication">
+    <Application Id="OrcaStudio" Executable="OrcaStudio.exe" EntryPoint="Windows.FullTrustApplication">
       <uap:VisualElements
-        DisplayName="OrcaSlicer"
-        Description="Open-source slicer for FDM 3D printers"
+        DisplayName="OrcaStudio"
+        Description="Open-source OrcaStudio slicer for FDM 3D printers"
         BackgroundColor="transparent"
         Square150x150Logo="Assets\Square150x150Logo.png"
         Square44x44Logo="Assets\Square44x44Logo.png" />
       <Extensions>
         <uap:Extension Category="windows.fileTypeAssociation">
-          <uap:FileTypeAssociation Name="orcaslicer-models">
+          <uap:FileTypeAssociation Name="orcastudio-models">
             <uap:SupportedFileTypes>
               <uap:FileType>.3mf</uap:FileType>
               <uap:FileType>.stl</uap:FileType>
@@ -62,7 +62,7 @@
           </uap:FileTypeAssociation>
         </uap:Extension>
         <uap:Extension Category="windows.protocol">
-          <uap:Protocol Name="orcaslicer" />
+          <uap:Protocol Name="bambustudio" />
         </uap:Extension>
       </Extensions>
     </Application>

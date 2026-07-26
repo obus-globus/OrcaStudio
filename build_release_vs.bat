@@ -74,7 +74,7 @@ if "%VS_MAJOR%"=="16" (
     set CMAKE_GENERATOR="Visual Studio 18 2026"
 ) else (
     echo Error: Unsupported Visual Studio version: %VS_MAJOR%
-    echo Supported versions: VS2019 (16.x^), VS2022 (17.x^), VS2026 (18.x^)
+    echo Supported versions: VS2019 ^(16.x^), VS2022 ^(17.x^), VS2026 ^(18.x^)
     exit /b 1
 )
 
@@ -133,16 +133,23 @@ REM Set minimum CMake policy to avoid <3.5 errors
 set CMAKE_POLICY_VERSION_MINIMUM=3.5
 if "%USE_NINJA%"=="1" (
     cmake ../ -G %CMAKE_GENERATOR% -DCMAKE_BUILD_TYPE=%build_type%
+    if errorlevel 1 exit /b 1
     cmake --build . --config %build_type% --target deps
+    if errorlevel 1 exit /b 1
 ) else (
     cmake ../ -G %CMAKE_GENERATOR% -A %arch% -DCMAKE_BUILD_TYPE=%build_type%
+    if errorlevel 1 exit /b 1
     cmake --build . --config %build_type% --target deps -- -m
+    if errorlevel 1 exit /b 1
 )
 @echo off
 
 if "%1"=="deps" goto :done
 
 :slicer
+call :check_slicer_linux_runtime_inputs
+if errorlevel 1 exit /b 1
+
 echo "building Orca Slicer..."
 cd %WP%
 mkdir %build_dir%
@@ -151,22 +158,30 @@ cd %build_dir%
 echo on
 set CMAKE_POLICY_VERSION_MINIMUM=3.5
 if "%USE_NINJA%"=="1" (
-    cmake .. -G %CMAKE_GENERATOR% -DORCA_TOOLS=ON %SIG_FLAG% -DBUILD_TESTS=%BUILD_TESTS% -DCMAKE_BUILD_TYPE=%build_type%
+    cmake .. -G %CMAKE_GENERATOR% -DORCA_TOOLS=ON -DBBL_RELEASE_TO_PUBLIC=1 -DBBL_INTERNAL_TESTING=0 %SIG_FLAG% -DBUILD_TESTS=%BUILD_TESTS% -DCMAKE_BUILD_TYPE=%build_type%
+    if errorlevel 1 exit /b 1
     cmake --build . --config %build_type% --target ALL_BUILD
+    if errorlevel 1 exit /b 1
 ) else (
-    cmake .. -G %CMAKE_GENERATOR% -A %arch% -DORCA_TOOLS=ON %SIG_FLAG% -DBUILD_TESTS=%BUILD_TESTS% -DCMAKE_BUILD_TYPE=%build_type%
+    cmake .. -G %CMAKE_GENERATOR% -A %arch% -DORCA_TOOLS=ON -DBBL_RELEASE_TO_PUBLIC=1 -DBBL_INTERNAL_TESTING=0 %SIG_FLAG% -DBUILD_TESTS=%BUILD_TESTS% -DCMAKE_BUILD_TYPE=%build_type%
+    if errorlevel 1 exit /b 1
     cmake --build . --config %build_type% --target ALL_BUILD -- -m
+    if errorlevel 1 exit /b 1
 )
 @echo off
 cd ..
 call scripts/run_gettext.bat
+if errorlevel 1 exit /b 1
 cd %build_dir%
 cmake --build . --target install --config %build_type%
+if errorlevel 1 exit /b 1
+call :copy_slicer_linux_runtime
+if errorlevel 1 exit /b 1
 
 :done
 @echo off
-for /f "tokens=1-3 delims=:.," %%a in ("%_START_TIME: =0%") do set /a "_start_s=%%a*3600+%%b*60+%%c"
-for /f "tokens=1-3 delims=:.," %%a in ("%TIME: =0%") do set /a "_end_s=%%a*3600+%%b*60+%%c"
+for /f "tokens=1-3 delims=:.," %%a in ("%_START_TIME: =0%") do set /a "_start_s=(1%%a-100)*3600 + (1%%b-100)*60 + (1%%c-100)"
+for /f "tokens=1-3 delims=:.," %%a in ("%TIME: =0%") do set /a "_end_s=(1%%a-100)*3600 + (1%%b-100)*60 + (1%%c-100)"
 set /a "_elapsed=_end_s - _start_s"
 if %_elapsed% lss 0 set /a "_elapsed+=86400"
 set /a "_hours=_elapsed / 3600"
@@ -175,3 +190,195 @@ set /a "_mins=_remainder / 60"
 set /a "_secs=_remainder - _mins * 60"
 echo.
 echo Build completed in %_hours%h %_mins%m %_secs%s
+exit /b 0
+
+:resolve_rootfs_tar
+if defined SLICER_LINUX_RUNTIME_ROOTFS_TAR exit /b 0
+
+if defined SLICER_LINUX_RUNTIME_WSL_ROOTFS_TAR (
+    if exist "%SLICER_LINUX_RUNTIME_WSL_ROOTFS_TAR%" (
+        set "SLICER_LINUX_RUNTIME_ROOTFS_TAR=%SLICER_LINUX_RUNTIME_WSL_ROOTFS_TAR%"
+        exit /b 0
+    )
+    echo Missing file from SLICER_LINUX_RUNTIME_WSL_ROOTFS_TAR: %SLICER_LINUX_RUNTIME_WSL_ROOTFS_TAR%
+    exit /b 1
+)
+
+if exist "%WP%\tools\slicer_linux_runtime\rootfs\windows-wsl2-rootfs.tar" (
+    set "SLICER_LINUX_RUNTIME_ROOTFS_TAR=%WP%\tools\slicer_linux_runtime\rootfs\windows-wsl2-rootfs.tar"
+    exit /b 0
+)
+
+if exist "%WP%\tools\slicer_linux_runtime\windows-wsl2-rootfs.tar" (
+    set "SLICER_LINUX_RUNTIME_ROOTFS_TAR=%WP%\tools\slicer_linux_runtime\windows-wsl2-rootfs.tar"
+    exit /b 0
+)
+
+echo Missing windows-wsl2-rootfs.tar
+echo Expected one of:
+echo   %WP%\tools\slicer_linux_runtime\rootfs\windows-wsl2-rootfs.tar
+echo   %WP%\tools\slicer_linux_runtime\windows-wsl2-rootfs.tar
+echo Or set SLICER_LINUX_RUNTIME_WSL_ROOTFS_TAR to an absolute path.
+exit /b 1
+
+:check_slicer_linux_runtime_inputs
+set "HOST_RUNTIME_DIR=%WP%\tools\slicer_linux_runtime_host\runtime\linux-x86_64"
+
+call :resolve_rootfs_tar
+if errorlevel 1 exit /b 1
+
+if not exist "%HOST_RUNTIME_DIR%\slicer_linux_runtime_host" (
+    echo Missing linux host runtime: %HOST_RUNTIME_DIR%\slicer_linux_runtime_host
+    echo Build it first on Linux with:
+    echo   tools\slicer_linux_runtime_host\package_linux_host_runtime.sh
+    exit /b 1
+)
+
+if not exist "%HOST_RUNTIME_DIR%\slicer_linux_runtime_host_abi1" (
+    echo Missing linux host ABI1 runtime: %HOST_RUNTIME_DIR%\slicer_linux_runtime_host_abi1
+    exit /b 1
+)
+
+if not exist "%HOST_RUNTIME_DIR%\slicer_linux_runtime_host_abi0" (
+    echo Missing linux host ABI0 runtime: %HOST_RUNTIME_DIR%\slicer_linux_runtime_host_abi0
+    exit /b 1
+)
+
+if not exist "%HOST_RUNTIME_DIR%\runtime-files.sha256" (
+    echo Missing Linux runtime manifest: %HOST_RUNTIME_DIR%\runtime-files.sha256
+    exit /b 1
+)
+
+if not exist "%HOST_RUNTIME_DIR%\ca-certificates.crt" (
+    echo Missing CA bundle for linux Linux runtime: %HOST_RUNTIME_DIR%\ca-certificates.crt
+    exit /b 1
+)
+
+if not exist "%HOST_RUNTIME_DIR%\slicer_base64.cer" (
+    echo Missing slicer certificate for linux Linux runtime: %HOST_RUNTIME_DIR%\slicer_base64.cer
+    exit /b 1
+)
+
+echo Linux runtime preflight OK
+echo   host runtime: %HOST_RUNTIME_DIR%
+echo   rootfs tar:   %SLICER_LINUX_RUNTIME_ROOTFS_TAR%
+exit /b 0
+
+:copy_slicer_linux_runtime
+set "INSTALL_DIR=%WP%\%build_dir%\OrcaStudio"
+set "HOST_RUNTIME_DIR=%WP%\tools\slicer_linux_runtime_host\runtime\linux-x86_64"
+
+if not defined SLICER_LINUX_RUNTIME_ROOTFS_TAR (
+    call :resolve_rootfs_tar
+    if errorlevel 1 exit /b 1
+)
+
+if not exist "%HOST_RUNTIME_DIR%\slicer_linux_runtime_host" (
+    echo Missing linux host runtime: %HOST_RUNTIME_DIR%\slicer_linux_runtime_host
+    echo Build it first on Linux with:
+    echo   tools\slicer_linux_runtime_host\package_linux_host_runtime.sh
+    exit /b 1
+)
+
+if not exist "%HOST_RUNTIME_DIR%\slicer_linux_runtime_host_abi1" (
+    echo Missing linux host ABI1 runtime: %HOST_RUNTIME_DIR%\slicer_linux_runtime_host_abi1
+    exit /b 1
+)
+
+if not exist "%HOST_RUNTIME_DIR%\slicer_linux_runtime_host_abi0" (
+    echo Missing linux host ABI0 runtime: %HOST_RUNTIME_DIR%\slicer_linux_runtime_host_abi0
+    exit /b 1
+)
+
+if not exist "%HOST_RUNTIME_DIR%\runtime-files.sha256" (
+    echo Missing Linux runtime manifest: %HOST_RUNTIME_DIR%\runtime-files.sha256
+    exit /b 1
+)
+
+if not exist "%HOST_RUNTIME_DIR%\ca-certificates.crt" (
+    echo Missing CA bundle for linux Linux runtime: %HOST_RUNTIME_DIR%\ca-certificates.crt
+    exit /b 1
+)
+
+if not exist "%HOST_RUNTIME_DIR%\slicer_base64.cer" (
+    echo Missing slicer certificate for linux Linux runtime: %HOST_RUNTIME_DIR%\slicer_base64.cer
+    exit /b 1
+)
+
+if not exist "%INSTALL_DIR%" (
+    echo Missing install directory: %INSTALL_DIR%
+    exit /b 1
+)
+
+if not exist "%INSTALL_DIR%\slicer_linux_runtime.dll" (
+    if exist "%WP%\%build_dir%\slicer_linux_runtime.dll" (
+        copy /Y "%WP%\%build_dir%\slicer_linux_runtime.dll" "%INSTALL_DIR%\slicer_linux_runtime.dll" >nul
+    )
+)
+
+if not exist "%INSTALL_DIR%\slicer_linux_runtime.dll" (
+    if exist "%WP%\%build_dir%\src\%build_type%\slicer_linux_runtime.dll" (
+        copy /Y "%WP%\%build_dir%\src\%build_type%\slicer_linux_runtime.dll" "%INSTALL_DIR%\slicer_linux_runtime.dll" >nul
+    )
+)
+
+if not exist "%INSTALL_DIR%\slicer_linux_runtime.dll" (
+    echo Missing runtime DLL in install output: %INSTALL_DIR%\slicer_linux_runtime.dll
+    exit /b 1
+)
+
+xcopy "%HOST_RUNTIME_DIR%\*" "%INSTALL_DIR%\\" /I /Y >nul
+if errorlevel 4 (
+    echo Failed to copy flat linux host runtime files into %INSTALL_DIR%
+    exit /b 1
+)
+
+copy /Y "%SLICER_LINUX_RUNTIME_ROOTFS_TAR%" "%INSTALL_DIR%\windows-wsl2-rootfs.tar" >nul
+if errorlevel 1 (
+    echo Failed to copy windows-wsl2-rootfs.tar into %INSTALL_DIR%
+    exit /b 1
+)
+
+copy /Y "%WP%\tools\slicer_linux_runtime\wsl\slicer_linux_runtime_wsl_run_host.sh" "%INSTALL_DIR%\slicer_linux_runtime_wsl_run_host.sh" >nul
+if errorlevel 1 (
+    echo Failed to copy slicer_linux_runtime_wsl_run_host.sh into %INSTALL_DIR%
+    exit /b 1
+)
+
+copy /Y "%WP%\tools\slicer_linux_runtime\wsl\install_runtime.ps1" "%INSTALL_DIR%\install_runtime.ps1" >nul
+if errorlevel 1 (
+    echo Failed to copy install_runtime.ps1 into %INSTALL_DIR%
+    exit /b 1
+)
+
+copy /Y "%WP%\tools\slicer_linux_runtime\wsl\install_runtime.cmd" "%INSTALL_DIR%\install_runtime.cmd" >nul
+if errorlevel 1 (
+    echo Failed to copy install_runtime.cmd into %INSTALL_DIR%
+    exit /b 1
+)
+
+copy /Y "%WP%\tools\slicer_linux_runtime\wsl\verify_runtime.ps1" "%INSTALL_DIR%\verify_runtime.ps1" >nul
+if errorlevel 1 (
+    echo Failed to copy verify_runtime.ps1 into %INSTALL_DIR%
+    exit /b 1
+)
+
+copy /Y "%WP%\tools\slicer_linux_runtime\wsl\slicer_linux_runtime_wsl_distro.txt" "%INSTALL_DIR%\slicer_linux_runtime_wsl_distro.txt" >nul
+if errorlevel 1 (
+    echo Failed to copy slicer_linux_runtime_wsl_distro.txt into %INSTALL_DIR%
+    exit /b 1
+)
+
+copy /Y "%WP%\tools\slicer_linux_runtime\wsl\slicer_linux_runtime_component_dir.txt" "%INSTALL_DIR%\slicer_linux_runtime_component_dir.txt" >nul
+if errorlevel 1 (
+    echo Failed to copy slicer_linux_runtime_component_dir.txt into %INSTALL_DIR%
+    exit /b 1
+)
+
+copy /Y "%WP%\tools\slicer_linux_runtime\release\assemble_windows_runtime_bundle.ps1" "%INSTALL_DIR%\assemble_windows_runtime_bundle.ps1" >nul
+if errorlevel 1 (
+    echo Failed to copy assemble_windows_runtime_bundle.ps1 into %INSTALL_DIR%
+    exit /b 1
+)
+
+exit /b 0

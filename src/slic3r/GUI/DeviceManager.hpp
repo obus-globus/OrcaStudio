@@ -447,6 +447,9 @@ public:
     bool    is_system_printing();
 
     int     print_error;
+    int     last_auto_ignored_print_error_ = 0;
+    std::chrono::steady_clock::time_point last_auto_ignored_print_error_command_at_{};
+    std::chrono::steady_clock::time_point last_auto_ignored_print_error_retry_at_{};
     std::string m_print_error_img_id;
     static std::string get_error_code_str(int error_code);
     std::string get_print_error_str() const { return MachineObject::get_error_code_str(this->print_error); }
@@ -673,6 +676,7 @@ public:
 
     // fun2
     bool is_support_print_with_emmc{false};
+    bool is_support_model_internal_storage{false};
     bool is_support_remote_dry = false;
     bool is_support_check_track_switch_match_slice_printer{false};
     bool is_support_pa_mode{false};

@@ -130,7 +130,7 @@ static void market_model_scoring_page(int design_id)
         boost::algorithm::replace_first(url, std::to_string(design_id), "");
         url = sub_url + url;
         try {
-            if (!url.empty()) { wxLaunchDefaultBrowser(url); }
+            if (!url.empty()) { wxGetApp().open_browser_with_warning_dialog(url); }
         } catch (...) {
             return;
         }
@@ -1530,7 +1530,7 @@ wxBoxSizer *StatusBasePanel::create_monitoring_page()
 //    media_ctrl_panel              = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
 //    media_ctrl_panel->SetBackgroundColour(*wxBLACK);
 //    wxBoxSizer *bSizer_monitoring = new wxBoxSizer(wxVERTICAL);
-    m_media_ctrl = new wxMediaCtrl2(this);
+    m_media_ctrl = new BBLMediaCtrl(this);
     m_media_ctrl->SetMinSize(wxSize(PAGE_MIN_WIDTH, FromDIP(288)));
 
     m_custom_camera_view = WebView::CreateWebView(this, wxEmptyString);
@@ -2943,9 +2943,16 @@ void StatusPanel::update_error_message()
 
     if (obj->print_error <= 0) {
         error_info_reset();
+        if (m_print_error_dlg) {
+            delete m_print_error_dlg;
+            m_print_error_dlg = nullptr;
+        }
     } else if (obj->print_error != last_error) {
         /* clear old dialog */
-        if (m_print_error_dlg) { delete m_print_error_dlg; }
+        if (m_print_error_dlg) {
+            delete m_print_error_dlg;
+            m_print_error_dlg = nullptr;
+        }
 
         /* show device error message*/
         m_print_error_dlg = new DeviceErrorDialog(obj, this);
@@ -4737,7 +4744,7 @@ void StatusPanel::on_ams_guide(wxCommandEvent& event)
     // Orca: neutral wiki link (vendor URLs removed)
     wxString ams_wiki_url = "https://www.orcaslicer.com/wiki/";
 
-    wxLaunchDefaultBrowser(ams_wiki_url);
+    wxGetApp().open_browser_with_warning_dialog(ams_wiki_url);
 }
 
 void StatusPanel::on_ams_retry(wxCommandEvent& event)
@@ -5676,7 +5683,7 @@ std::pair<wxStaticBitmap *, ScoreDialog::ImageMsg> ScoreDialog::create_oss_thumb
 
     Slic3r::Http http   = Slic3r::Http::get(oss_path);
     std::string  suffix = oss_path.substr(oss_path.find_last_of(".") + 1);
-    http.header("accept", "image/" + suffix) //"image/" + suffix
+    http.via_linux_runtime().header("accept", "image/" + suffix) //"image/" + suffix
         .header("Accept-Encoding", "gzip")
         .on_complete([this, imageCtrl, time = std::weak_ptr<int>(m_tocken)](std::string body, unsigned int status) {
             if (time.expired()) return;

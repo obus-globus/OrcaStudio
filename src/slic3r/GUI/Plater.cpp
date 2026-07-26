@@ -2668,7 +2668,6 @@ Sidebar::Sidebar(Plater *parent)
 
         //ScalableButton *wiki_bed = new ScalableButton(p->panel_printer_bed, wxID_ANY, "help");
         //wiki_bed->Bind(wxEVT_BUTTON, [](wxCommandEvent) {
-        //    wxLaunchDefaultBrowser("https://wiki.bambulab.com/en/x1/manual/compatibility-and-parameter-settings-of-filaments");
         //});
 
         ScalableBitmap bitmap_bed(p->panel_printer_bed, "printer_placeholder", PRINTER_THUMBNAIL_SIZE.GetHeight());
@@ -13419,6 +13418,7 @@ void Plater::import_model_id(wxString download_info)
         auto filesize = 0;
         bool size_limit = false;
         auto http = Http::get(download_url.ToStdString());
+        http.via_linux_runtime();
 
         while (cont && retry_count < max_retries) {
             retry_count++;

@@ -21126,6 +21126,11 @@ msgstr "Версия для установки:"
 msgid "Download and Install"
 msgstr "Загрузить и установить"
 
+# Делает то же самое, что и Remind Later, просто выводится при обнаружении
+# повреждения, а не при обновлении
+msgid "Skip for Now"
+msgstr "Напомнить позже"
+
 msgid "A new version of the Bambu Network Plug-in is available."
 msgstr "Доступна новая версия сетевого плагина Bambu."
 
@@ -21142,6 +21147,12 @@ msgstr "Не напоминать"
 msgid "Update Now"
 msgstr "Установить обновление"
 
+msgid "Remind Later"
+msgstr "Напомнить позже"
+
+msgid "Skip Version"
+msgstr "Пропустить версию"
+
 msgid "(Latest)"
 msgstr "(новейшая)"
 
@@ -21157,6 +21168,9 @@ msgstr "Для загрузки плагина требуется перезап
 
 msgid "Restart Now"
 msgstr "Перезапустить сейчас"
+
+msgid "Restart Later"
+msgstr "Перезапустить позже"
 
 msgid "NO RAMMING AT ALL"
 msgstr "Рэмминг отключён"
@@ -21767,20 +21781,6 @@ msgstr ""
 # FAN_HEAT_BREAK_0_IDX
 #~ msgid "Hotend"
 #~ msgstr "Термобарьер"
-
-# Делает то же самое, что и Remind Later, просто выводится при обнаружении
-# повреждения, а не при обновлении
-#~ msgid "Skip for Now"
-#~ msgstr "Напомнить позже"
-
-#~ msgid "Remind Later"
-#~ msgstr "Напомнить позже"
-
-#~ msgid "Skip Version"
-#~ msgstr "Пропустить версию"
-
-#~ msgid "Restart Later"
-#~ msgstr "Перезапустить позже"
 
 #~ msgid "Select filament that installed to the left nozzle"
 #~ msgstr "Выберите филамент, установленный в левое сопло"

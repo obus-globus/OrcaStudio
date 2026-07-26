@@ -6,6 +6,7 @@
 #include "QidiPrinterAgent.hpp"
 #include "SnapmakerPrinterAgent.hpp"
 #include "MoonrakerPrinterAgent.hpp"
+#include "SlicerLinuxRuntime/SlicerLinuxRuntimeConfig.hpp"
 #include "slic3r/plugin/PluginManager.hpp"
 #include "slic3r/plugin/pluginTypes/printerAgent/PrinterAgentPluginCapability.hpp"
 #include "CrealityPrintAgent.hpp"
@@ -193,33 +194,39 @@ void NetworkAgentFactory::register_all_agents()
 
 std::unique_ptr<NetworkAgent> create_agent_from_config(const std::string& log_dir, AppConfig* app_config)
 {
+    NetworkAgentFactory::register_all_agents();
+
     if (!app_config)
         return std::make_unique<NetworkAgent>(nullptr, nullptr);
 
-    // Always create Orca cloud agent as the primary provider
-    auto cloud_agent = NetworkAgentFactory::create_cloud_agent(ORCA_CLOUD_PROVIDER, log_dir);
-    if (!cloud_agent) {
-        BOOST_LOG_TRIVIAL(error) << "Failed to create cloud agent";
-    }
+    const bool has_external_component = app_config->get_bool("installed_networking");
+    const std::string primary_provider = has_external_component ? BBL_CLOUD_PROVIDER : ORCA_CLOUD_PROVIDER;
+
+    auto cloud_agent = NetworkAgentFactory::create_cloud_agent(primary_provider, log_dir);
+    if (!cloud_agent)
+        BOOST_LOG_TRIVIAL(error) << "Failed to create cloud agent: " << primary_provider;
 
     auto agent = std::make_unique<NetworkAgent>(std::move(cloud_agent), nullptr);
 
     if (agent) {
-        // create orca cloud agent first
-        auto* orca_cloud = dynamic_cast<OrcaCloudServiceAgent*>(agent->get_cloud_agent().get());
-        if (orca_cloud) {
+        if (auto* orca_cloud = dynamic_cast<OrcaCloudServiceAgent*>(agent->get_cloud_agent(ORCA_CLOUD_PROVIDER).get()))
             orca_cloud->configure_urls(app_config);
-        }
 
-        // Initialize third-party cloud agents from config
         auto providers = app_config->get_cloud_providers();
+        if (has_external_component && std::find(providers.begin(), providers.end(), BBL_CLOUD_PROVIDER) == providers.end())
+            providers.push_back(BBL_CLOUD_PROVIDER);
+
         for (const auto& provider : providers) {
-            if (provider == ORCA_CLOUD_PROVIDER)
-                continue; // Primary agent already created above
+            if (provider == primary_provider)
+                continue;
             auto third_party_agent = NetworkAgentFactory::create_cloud_agent(provider, log_dir);
             if (third_party_agent) {
+                if (provider == ORCA_CLOUD_PROVIDER) {
+                    if (auto* orca_cloud = dynamic_cast<OrcaCloudServiceAgent*>(third_party_agent.get()))
+                        orca_cloud->configure_urls(app_config);
+                }
                 agent->add_cloud_agent(provider, std::move(third_party_agent));
-                BOOST_LOG_TRIVIAL(info) << "Initialized third-party cloud agent: " << provider;
+                BOOST_LOG_TRIVIAL(info) << "Initialized cloud agent: " << provider;
             }
         }
     }

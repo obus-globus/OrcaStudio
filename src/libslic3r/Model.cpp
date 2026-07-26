@@ -96,6 +96,7 @@ Model& Model::assign_copy(const Model &rhs)
     // BBS: for design info
     this->design_info = rhs.design_info;
     this->model_info = rhs.model_info;
+    this->design_id = rhs.design_id;
     this->stl_design_id = rhs.stl_design_id;
     this->stl_design_country = rhs.stl_design_country;
     this->profile_info = rhs.profile_info;
@@ -133,6 +134,7 @@ Model& Model::assign_copy(Model &&rhs)
 
     //BBS: add auxiliary path logic
     // BBS: backup, all in one temp dir
+    this->design_id = rhs.design_id;
     this->stl_design_id = rhs.stl_design_id;
     this->stl_design_country = rhs.stl_design_country;
     this->mk_name = rhs.mk_name;
@@ -1047,6 +1049,7 @@ void Model::load_from(Model& model)
     object_backup_id_map = model.object_backup_id_map;
     next_object_backup_id = model.next_object_backup_id;
     design_info = model.design_info;
+    design_id = model.design_id;
     stl_design_id = model.stl_design_id;
     stl_design_country = model.stl_design_country;
     model_info  = model.model_info;

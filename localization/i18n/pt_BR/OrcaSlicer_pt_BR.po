@@ -20167,6 +20167,9 @@ msgstr "Versão para instalar:"
 msgid "Download and Install"
 msgstr "Baixar e Instalar"
 
+msgid "Skip for Now"
+msgstr "Pular por Enquanto"
+
 msgid "A new version of the Bambu Network Plug-in is available."
 msgstr "Uma nova versão do Plug-in de Rede Bambu está disponível."
 
@@ -20183,6 +20186,12 @@ msgstr "Não Perguntar Novamente"
 msgid "Update Now"
 msgstr "Atualizar Agora"
 
+msgid "Remind Later"
+msgstr "Lembre-me Depois"
+
+msgid "Skip Version"
+msgstr "Pular Versão"
+
 msgid "(Latest)"
 msgstr "(Mais recente)"
 
@@ -20197,6 +20206,9 @@ msgstr "É necessário reiniciar para carregar o novo plug-in. Deseja reiniciar 
 
 msgid "Restart Now"
 msgstr "Reiniciar Agora"
+
+msgid "Restart Later"
+msgstr "Reiniciar Depois"
 
 msgid "NO RAMMING AT ALL"
 msgstr "SEM NENHUM MOLDEAMENTO"
@@ -20800,18 +20812,6 @@ msgstr ""
 
 #~ msgid "Hotend"
 #~ msgstr "Extrusora"
-
-#~ msgid "Skip for Now"
-#~ msgstr "Pular por Enquanto"
-
-#~ msgid "Remind Later"
-#~ msgstr "Lembre-me Depois"
-
-#~ msgid "Skip Version"
-#~ msgstr "Pular Versão"
-
-#~ msgid "Restart Later"
-#~ msgstr "Reiniciar Depois"
 
 #~ msgid "Select filament that installed to the left nozzle"
 #~ msgstr "Selecione o filamento instalado no bico esquerdo"

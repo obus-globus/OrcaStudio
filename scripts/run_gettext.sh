@@ -125,5 +125,7 @@ do
             echo "Error encountered with msgfmt command for language ${lang}."
             exit 1  # Exit the script with an error status
         fi
+        cp -f "resources/i18n/${lang}/OrcaSlicer.mo" "resources/i18n/${lang}/OrcaStudio.mo"
+        cp -f "resources/i18n/${lang}/OrcaSlicer.mo" "resources/i18n/${lang}/BambuStudio.mo"
     fi
 done

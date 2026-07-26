@@ -392,6 +392,6 @@ void PresetBundleDialog::OpenBundleOnCloud(const std::string& id)
     if (!orca_agent)
         return;
 
-    wxLaunchDefaultBrowser(wxString::FromUTF8(orca_agent->get_bundle_url(id)));
+    wxGetApp().open_browser_with_warning_dialog(wxString::FromUTF8(orca_agent->get_bundle_url(id)));
 }
 }} // namespace Slic3r::GUI

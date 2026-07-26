@@ -8,6 +8,7 @@
 #include "BitmapCache.hpp"
 #include "wxExtensions.hpp"
 #include "slic3r/Utils/bambu_networking.hpp"
+#include "libslic3r_version.h"
 
 #include <wx/sizer.h>
 #include <wx/stattext.h>
@@ -289,7 +290,7 @@ NetworkPluginRestartDialog::NetworkPluginRestartDialog(wxWindow* parent)
 
     auto* text_sizer = new wxBoxSizer(wxVERTICAL);
 
-    auto* desc = new Label(this, 
+    auto* desc = new Label(this,
         _L("The Bambu Network Plug-in has been installed successfully."));
     desc->Wrap(TEXT_WRAP);
     desc->SetMaxSize(wxSize(TEXT_WRAP, -1));
@@ -320,7 +321,7 @@ NetworkPluginRestartDialog::NetworkPluginRestartDialog(wxWindow* parent)
         m_restart_now = false;
         EndModal(wxID_CANCEL);
     });
-    
+
     main_sizer->Add(dlg_btns, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, FromDIP(10));
 
     SetSizer(main_sizer);

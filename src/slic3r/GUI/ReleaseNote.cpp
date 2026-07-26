@@ -295,7 +295,7 @@ UpdateVersionDialog::UpdateVersionDialog(wxWindow *parent)
             m_vebview_release_note->SetPage(wxString::FromUTF8(html_source), "");
         } else if (count >= 3) {
             // Launch the default browser for links clicked by the user
-            wxLaunchDefaultBrowser(event.GetURL());
+            wxGetApp().open_browser_with_warning_dialog(event.GetURL());
             event.Veto();
         }
     });
@@ -1250,7 +1250,7 @@ void ConfirmBeforeSendDialog::update_text(std::vector<ConfirmBeforeSendInfo> tex
         else
         {
             label_item = new Label(m_vebview_release_note, text.text + " " + _L("Please refer to Wiki before use->"), LB_AUTO_WRAP);
-            label_item->Bind(wxEVT_LEFT_DOWN, [this, text](wxMouseEvent& e) { wxLaunchDefaultBrowser(text.wiki_url);});
+            label_item->Bind(wxEVT_LEFT_DOWN, [this, text](wxMouseEvent& e) { wxGetApp().open_browser_with_warning_dialog(text.wiki_url);});
             label_item->Bind(wxEVT_ENTER_WINDOW, [this](auto& e) { SetCursor(wxCURSOR_HAND); });
             label_item->Bind(wxEVT_LEAVE_WINDOW, [this](auto& e) { SetCursor(wxCURSOR_ARROW); });
         }

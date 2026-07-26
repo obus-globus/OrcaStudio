@@ -1,5 +1,6 @@
 #pragma once
 #include <mutex>
+#include <functional>
 #include "libslic3r/CommonDefs.hpp"
 
 #include "slic3r/Utils/json_diff.hpp"
@@ -33,6 +34,9 @@ private:
     std::string local_selected_machine;                         /* dev_id */
     std::map<std::string, MachineObject*> localMachineList;     /* dev_id -> MachineObject*, localMachine SSDP   */
     std::map<std::string, MachineObject*> userMachineList;      /* dev_id -> MachineObject*  cloudMachine of User */
+
+    std::mutex autoRetryPrintUiCallbackMutex;
+    std::function<bool(const std::string&)> m_auto_retry_print_ui_callback;
 
 public:
     DeviceManager(NetworkAgent* agent = nullptr);
@@ -87,6 +91,9 @@ public:
     std::map<std::string, MachineObject*> get_my_machine_list();
     std::map<std::string, MachineObject*> get_my_cloud_machine_list();
     void modify_device_name(std::string dev_id, std::string dev_name, const std::string& provider);
+
+    void set_auto_retry_print_ui_callback(std::function<bool(const std::string&)> callback);
+    bool trigger_auto_retry_print_ui_callback(const std::string& dev_id);
 
     /* create machine or update machine properties */
     void on_machine_alive(std::string json_str);
