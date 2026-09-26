@@ -995,7 +995,7 @@ namespace Slic3r
         // Only reconnect the remembered machine (cloud, or LAN with access right).
         // Do not select an arbitrary first machine: agent swaps intentionally leave
         // the selection empty until the new agent explicitly selects its configured printer.
-        const auto all_machines = get_my_machine_list();
+        const auto all_machines = get_my_machine_list(get_current_printer_agent_id());
         if (all_machines.empty())
             return;
 

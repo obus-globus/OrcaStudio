@@ -583,6 +583,17 @@ int BBLNetworkPlugin::initialize(bool using_backup, const std::string& version)
         return -1;
     }
 
+    // The Linux runtime forwarder and host only implement the current plug-in ABI; handing them
+    // an older series' layouts (PrintParams_0203/_Legacy, pre-02.08 bind) would corrupt the call.
+    if (linux_runtime && m_network_abi != NetworkAbi::Current) {
+        const std::string detail = "The Linux runtime only supports the " + std::string(BAMBU_NETWORK_AGENT_VERSION)
+            + " plug-in series, loaded " + (loaded_version.empty() ? version : loaded_version);
+        BOOST_LOG_TRIVIAL(error) << "BBLNetworkPlugin::initialize: " << detail;
+        set_load_error("Network plug-in is incompatible", detail, library);
+        unload_unlocked();
+        return -1;
+    }
+
     return 0;
 }
 
@@ -1343,7 +1354,12 @@ std::vector<NetworkLibraryVersionInfo> get_all_available_versions(const std::str
     std::vector<NetworkLibraryVersionInfo> result;
     std::set<std::string> all_known_versions;
 
+    // Under the Linux runtime only the current ABI can be called (see initialize()).
+    const bool current_abi_only = Slic3r::SlicerLinuxRuntime::enabled();
+
     for (size_t i = 0; i < AVAILABLE_NETWORK_VERSIONS_COUNT; ++i) {
+        if (current_abi_only && AVAILABLE_NETWORK_VERSIONS[i].abi != NetworkAbi::Current)
+            continue;
         result.push_back(NetworkLibraryVersionInfo::from_static(AVAILABLE_NETWORK_VERSIONS[i]));
         all_known_versions.insert(AVAILABLE_NETWORK_VERSIONS[i].version);
     }
@@ -1361,6 +1377,8 @@ std::vector<NetworkLibraryVersionInfo> get_all_available_versions(const std::str
         if (is_series_managed_version(version))
             continue;
         if (!is_supported_network_version(version))
+            continue;
+        if (current_abi_only && network_plugin_abi(version) != NetworkAbi::Current)
             continue;
         const std::string series = network_plugin_series(version);
         const std::string sfx    = version.size() > series.size() ? version.substr(series.size()) : version;

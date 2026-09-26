@@ -6294,7 +6294,11 @@ void GUI_App::on_user_login_handle(wxCommandEvent &evt)
             MachineObject* selected = dev->get_selected_machine();
             if (selected && !selected->is_lan_mode_printer()) return;
 
-            auto cloud_machines = dev->get_my_cloud_machine_list();
+            // Only pick for the Bambu agent, and only among its own machines: another live
+            // agent (Moonraker, Orca) must not get a Bambu cloud printer selected under it.
+            const std::string agent_id = dev->get_current_printer_agent_id();
+            if (agent_id != BBL_PRINTER_AGENT_ID) return;
+            auto cloud_machines = dev->get_my_cloud_machine_list(agent_id);
             if (cloud_machines.empty()) return;
 
             std::string target;

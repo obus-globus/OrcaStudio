@@ -478,23 +478,7 @@ function build_slicer() {
 
             frameworks_dst="./$APP_BUNDLE_NAME/Contents/Frameworks"
             mkdir -p "$frameworks_dst"
-            deps_lib_dirs=("$DEPS/usr/local/lib" "$DEPS/lib")
-            for ffmpeg_pattern in libavcodec*.dylib libavutil*.dylib libswscale*.dylib libswresample*.dylib; do
-                found_ffmpeg=0
-                for deps_lib_dir in "${deps_lib_dirs[@]}"; do
-                    [ -d "$deps_lib_dir" ] || continue
-                    for ffmpeg_lib in "$deps_lib_dir"/$ffmpeg_pattern; do
-                        if [ -f "$ffmpeg_lib" ]; then
-                            cp -f "$ffmpeg_lib" "$frameworks_dst/$(basename "$ffmpeg_lib")"
-                            found_ffmpeg=1
-                        fi
-                    done
-                done
-                if [ "$found_ffmpeg" -eq 0 ] && [ "$ffmpeg_pattern" != "libswresample*.dylib" ]; then
-                    echo "Missing macOS FFmpeg runtime file matching ${deps_lib_dirs[*]} / $ffmpeg_pattern"
-                    exit 1
-                fi
-            done
+            # FFmpeg is linked statically on macOS (deps/FFMPEG), so no dylibs are bundled.
 
             is_macho_file() {
                 local target="$1"
