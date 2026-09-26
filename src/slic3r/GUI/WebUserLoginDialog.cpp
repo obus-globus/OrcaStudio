@@ -678,7 +678,7 @@ void ZUserLogin::OnScriptMessage(wxWebViewEvent &evt)
                 std::string jump_url = j["data"]["url"].get<std::string>();
                 int loopback_port = ensure_loopback_port();
                 jump_url = rewrite_loopback_url(jump_url, loopback_port);
-                CallAfter([this, jump_url] {
+                CallAfter([jump_url] {
                     wxString url = wxString::FromUTF8(jump_url);
                     wxGetApp().open_browser_with_warning_dialog(url);
                     });
@@ -687,7 +687,7 @@ void ZUserLogin::OnScriptMessage(wxWebViewEvent &evt)
         else if (strCmd == "new_webpage") {
             if (j["data"].contains("url")) {
                 std::string jump_url = j["data"]["url"].get<std::string>();
-                CallAfter([this, jump_url] {
+                CallAfter([jump_url] {
                     wxString url = wxString::FromUTF8(jump_url);
                     wxGetApp().open_browser_with_warning_dialog(url);
                     });

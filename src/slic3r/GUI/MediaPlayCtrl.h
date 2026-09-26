@@ -92,7 +92,7 @@ private:
     bool m_device_busy = false;
     bool m_disable_lan = false;
     wxString m_url;
-    
+
     std::deque<wxString> m_tasks;
     boost::mutex m_mutex;
     boost::condition_variable m_cond;

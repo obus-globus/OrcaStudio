@@ -8,8 +8,9 @@ flatpak install flathub org.gnome.Platform//50 org.gnome.Sdk//50 org.freedesktop
 
 ##
 # in OrcaSlicer folder, run following command to build Orca
-# # First time build
-# flatpak-builder --state-dir=.flatpak-builder --keep-build-dirs --user --force-clean build-dir scripts/flatpak/com.orcaslicer.BambuStudio.yml
 
-# # Subsequent builds (only rebuilding OrcaSlicer)
-# flatpak-builder --state-dir=.flatpak-builder --keep-build-dirs --user build-dir scripts/flatpak/com.orcaslicer.BambuStudio.yml --build-only=BambuStudio
+# # First time build
+# flatpak-builder --state-dir=.flatpak-builder --keep-build-dirs --user --force-clean build-dir scripts/flatpak/com.orcaslicer.OrcaStudio.yml
+
+# # Subsequent builds (only rebuilding OrcaStudio)
+# flatpak-builder --state-dir=.flatpak-builder --keep-build-dirs --user build-dir scripts/flatpak/com.orcaslicer.OrcaStudio.yml --build-only=OrcaStudio

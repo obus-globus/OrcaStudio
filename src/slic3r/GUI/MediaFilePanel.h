@@ -63,7 +63,6 @@ private:
     ::Button    *m_button_year = nullptr;
     ::Button    *m_button_month = nullptr;
     ::Button    *m_button_all = nullptr;
-    ::Label     *m_switch_label = nullptr;
 
     ::TabCtrl *     m_storage_tab = nullptr;
 
