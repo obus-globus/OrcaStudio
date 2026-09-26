@@ -3,7 +3,7 @@
 *  Description: The panel with rack updating
 *
 * \n class wgtDeviceNozzleRackUpdate
-//**********************************************************/
+************************************************************/
 
 #include "wgtDeviceNozzleRackUpdate.h"
 
@@ -321,7 +321,7 @@ void wgtDeviceNozzleRackHotendUpdate::OnStatusIconClick(wxMouseEvent& event)
         m_status_label->SetLabel(_L("Refreshing"));
         m_status_bitmap->Show(false);
         // m_status_bitmap->Refresh();
-        if(!m_refreshing_icon->IsPlaying())
+        if(!m_refreshing_icon->IsPlaying()) 
         {
             m_refreshing_icon->Play();
             m_refreshing_icon->Show();
@@ -342,17 +342,18 @@ void wgtDeviceNozzleRackHotendUpdate::OnStatusIconClick(wxMouseEvent& event)
             dlg.AddButton(wxID_CANCEL, _L("Cancel"), false);
             dlg.AddButton(wxID_OK,_L("Jump to the upgrade page"), true);
 
-            if (dlg.ShowModal() == wxID_OK)
+            if (dlg.ShowModal() == wxID_OK) 
             {
-                wxGetApp().mainframe->m_monitor->jump_to_Upgrade();
+                if (MonitorPanel* monitor = MonitorPanel::if_built())
+                    monitor->jump_to_Upgrade();
 
                 wxCommandEvent evt(wxEVT_NOZZLE_JUMP_UPGRADE, GetId());
                 evt.SetEventObject(this);
                 wxWindow* target = GetParent();
-                if (target)
+                if (target) 
                 {
                     target = target->GetParent();
-                    if (target)
+                    if (target) 
                     {
                         wxPostEvent(target, evt);
                     }
@@ -379,8 +380,8 @@ void wgtDeviceNozzleRackHotendUpdate::OnBitmapHoverEnter(wxMouseEvent& event)
         scaledBmp = m_scaled_nozzle_image;
     }
 
-    m_hoverFrame = new wxFrame(nullptr, wxID_ANY, "",
-                                wxDefaultPosition, wxDefaultSize,
+    m_hoverFrame = new wxFrame(nullptr, wxID_ANY, "", 
+                                wxDefaultPosition, wxDefaultSize, 
                                 wxFRAME_NO_TASKBAR | wxBORDER_NONE | wxTRANSPARENT_WINDOW);
     m_hoverFrame->SetBackgroundColour(WGT_DEVICE_NOZZLE_RACK_HOTEND_UPDATE_DEFAULT_BG);
     m_hoverFrame->SetSize(scaledW, scaledH);
@@ -515,11 +516,11 @@ void wgtDeviceNozzleRackHotendUpdate::UpdateInfo(const DevNozzle& nozzle)
     }
 
     wxString filamentDisplayName{};
-    for (auto iter = GUI::wxGetApp().preset_bundle->filaments.begin(); iter != GUI::wxGetApp().preset_bundle->filaments.end(); ++iter)
+    for (auto iter = GUI::wxGetApp().preset_bundle->filaments.begin(); iter != GUI::wxGetApp().preset_bundle->filaments.end(); ++iter) 
     {
         const Preset& filament_preset = *iter;
         // const auto& config = filament_preset.config;
-        if (filament_preset.filament_id == nozzle.GetFilamentId())
+        if (filament_preset.filament_id == nozzle.GetFilamentId()) 
         {
             filamentDisplayName = wxString(filament_preset.alias);
         }

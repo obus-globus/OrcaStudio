@@ -57,58 +57,67 @@ namespace Slic3r {
 #define BAMBU_NETWORK_ERR_GET_FILAMENT_CONFIG_FAILED    -31
 #define BAMBU_NETWORK_ERR_AMS_SYNC_FAILED               -32
 
-#define BAMBU_NETWORK_ERR_BIND_CREATE_SOCKET_FAILED          -1010
-#define BAMBU_NETWORK_ERR_BIND_SOCKET_CONNECT_FAILED         -1020
-#define BAMBU_NETWORK_ERR_BIND_PUBLISH_LOGIN_REQUEST         -1030
-#define BAMBU_NETWORK_ERR_BIND_GET_PRINTER_TICKET_TIMEOUT    -1040
-#define BAMBU_NETWORK_ERR_BIND_GET_CLOUD_TICKET_TIMEOUT      -1050
-#define BAMBU_NETWORK_ERR_BIND_POST_TICKET_TO_CLOUD_FAILED   -1060
-#define BAMBU_NETWORK_ERR_BIND_PARSE_LOGIN_REPORT_FAILED     -1070
-#define BAMBU_NETWORK_ERR_BIND_ECODE_LOGIN_REPORT_FAILED     -1080
-#define BAMBU_NETWORK_ERR_BIND_RECEIVE_LOGIN_REPORT_TIMEOUT  -1090
+//bind error
+#define BAMBU_NETWORK_ERR_BIND_CREATE_SOCKET_FAILED          -1010 //failed to create socket
+#define BAMBU_NETWORK_ERR_BIND_SOCKET_CONNECT_FAILED         -1020 //failed to socket connect
+#define BAMBU_NETWORK_ERR_BIND_PUBLISH_LOGIN_REQUEST         -1030 //failed to publish login request
+#define BAMBU_NETWORK_ERR_BIND_GET_PRINTER_TICKET_TIMEOUT    -1040 //timeout to get ticket from printer
+#define BAMBU_NETWORK_ERR_BIND_GET_CLOUD_TICKET_TIMEOUT      -1050 //timeout to get ticket from cloud server
+#define BAMBU_NETWORK_ERR_BIND_POST_TICKET_TO_CLOUD_FAILED   -1060 //failed to post ticket to cloud server
+#define BAMBU_NETWORK_ERR_BIND_PARSE_LOGIN_REPORT_FAILED     -1070 //failed to parse login report reason no error code
+#define BAMBU_NETWORK_ERR_BIND_ECODE_LOGIN_REPORT_FAILED     -1080 //failed to parse login report reason has error code
+#define BAMBU_NETWORK_ERR_BIND_RECEIVE_LOGIN_REPORT_TIMEOUT  -1090 //timeout to receive login report
 
-#define BAMBU_NETWORK_ERR_PRINT_WR_REQUEST_PROJECT_ID_FAILED        -2010
-#define BAMBU_NETWORK_ERR_PRINT_WR_CHECK_MD5_FAILED                 -2020
-#define BAMBU_NETWORK_ERR_PRINT_WR_UPLOAD_3MF_CONFIG_TO_OSS_FAILED  -2030
-#define BAMBU_NETWORK_ERR_PRINT_WR_FILE_OVER_SIZE                   -2040
-#define BAMBU_NETWORK_ERR_PRINT_WR_PUT_NOTIFICATION_FAILED          -2050
-#define BAMBU_NETWORK_ERR_PRINT_WR_GET_NOTIFICATION_TIMEOUT         -2060
-#define BAMBU_NETWORK_ERR_PRINT_WR_GET_NOTIFICATION_FAILED          -2070
-#define BAMBU_NETWORK_ERR_PRINT_WR_PATCH_PROJECT_FAILED             -2080
-#define BAMBU_NETWORK_ERR_PRINT_WR_GET_MY_SETTING_FAILED            -2090
-#define BAMBU_NETWORK_ERR_PRINT_WR_FILE_NOT_EXIST                   -2100
-#define BAMBU_NETWORK_ERR_PRINT_WR_UPLOAD_3MF_TO_OSS_FAILED         -2110
-#define BAMBU_NETWORK_ERR_PRINT_WR_POST_TASK_FAILED                 -2120
-#define BAMBU_NETWORK_ERR_PRINT_WR_UPLOAD_FTP_FAILED                -2130
-#define BAMBU_NETWORK_ERR_PRINT_WR_GET_USER_UPLOAD_FAILED           -2140
+//start_local_print_with_record  error
+#define BAMBU_NETWORK_ERR_PRINT_WR_REQUEST_PROJECT_ID_FAILED        -2010 //failed to request project id
+#define BAMBU_NETWORK_ERR_PRINT_WR_CHECK_MD5_FAILED                 -2020 //failed to check md5 for upload 3mf to oss
+#define BAMBU_NETWORK_ERR_PRINT_WR_UPLOAD_3MF_CONFIG_TO_OSS_FAILED  -2030 //failed to  upload 3mf config to oss
+#define BAMBU_NETWORK_ERR_PRINT_WR_FILE_OVER_SIZE                   -2040 //the size of the uploaded file cannot exceed 1 GB
+#define BAMBU_NETWORK_ERR_PRINT_WR_PUT_NOTIFICATION_FAILED          -2050 //timeout to get notification
+#define BAMBU_NETWORK_ERR_PRINT_WR_GET_NOTIFICATION_TIMEOUT         -2060 //timeout to get notification
+#define BAMBU_NETWORK_ERR_PRINT_WR_GET_NOTIFICATION_FAILED          -2070 //failed to get notification
+#define BAMBU_NETWORK_ERR_PRINT_WR_PATCH_PROJECT_FAILED             -2080 //failed to patch project
+#define BAMBU_NETWORK_ERR_PRINT_WR_GET_MY_SETTING_FAILED            -2090 //failed to get my setting
+#define BAMBU_NETWORK_ERR_PRINT_WR_FILE_NOT_EXIST                   -2100 //3mf file is not exists
+#define BAMBU_NETWORK_ERR_PRINT_WR_UPLOAD_3MF_TO_OSS_FAILED         -2110 //failed to  upload 3mf to oss
+#define BAMBU_NETWORK_ERR_PRINT_WR_POST_TASK_FAILED                 -2120 //failed to post task
+#define BAMBU_NETWORK_ERR_PRINT_WR_UPLOAD_FTP_FAILED                -2130 //failed to upload to ftp
+#define BAMBU_NETWORK_ERR_PRINT_WR_GET_USER_UPLOAD_FAILED           -2140 //failed to get_user_upload
 
-#define BAMBU_NETWORK_ERR_PRINT_SP_REQUEST_PROJECT_ID_FAILED        -3010
-#define BAMBU_NETWORK_ERR_PRINT_SP_CHECK_MD5_FAILED                 -3020
-#define BAMBU_NETWORK_ERR_PRINT_SP_UPLOAD_3MF_CONFIG_TO_OSS_FAILED  -3030
-#define BAMBU_NETWORK_ERR_PRINT_SP_PUT_NOTIFICATION_FAILED          -3040
-#define BAMBU_NETWORK_ERR_PRINT_SP_GET_NOTIFICATION_TIMEOUT         -3050
-#define BAMBU_NETWORK_ERR_PRINT_SP_GET_NOTIFICATION_FAILED          -3060
-#define BAMBU_NETWORK_ERR_PRINT_SP_FILE_NOT_EXIST                   -3070
-#define BAMBU_NETWORK_ERR_PRINT_SP_GET_USER_UPLOAD_FAILED           -3080
-#define BAMBU_NETWORK_ERR_PRINT_SP_FILE_OVER_SIZE                   -3090
-#define BAMBU_NETWORK_ERR_PRINT_SP_UPLOAD_3MF_TO_OSS_FAILED         -3100
-#define BAMBU_NETWORK_ERR_PRINT_SP_PATCH_PROJECT_FAILED             -3110
-#define BAMBU_NETWORK_ERR_PRINT_SP_POST_TASK_FAILED                 -3120
-#define BAMBU_NETWORK_ERR_PRINT_SP_WAIT_PRINTER_FAILED              -3130
-#define BAMBU_NETOWRK_ERR_PRINT_SP_ENC_FLAG_NOT_READY               -3140
+//start_print  error
+#define BAMBU_NETWORK_ERR_PRINT_SP_REQUEST_PROJECT_ID_FAILED        -3010 //failed to request project id
+#define BAMBU_NETWORK_ERR_PRINT_SP_CHECK_MD5_FAILED                 -3020 //failed to check md5 for upload 3mf to oss
+#define BAMBU_NETWORK_ERR_PRINT_SP_UPLOAD_3MF_CONFIG_TO_OSS_FAILED  -3030 //failed to upload 3mf config to oss
+#define BAMBU_NETWORK_ERR_PRINT_SP_PUT_NOTIFICATION_FAILED          -3040 //failed to put notification
+#define BAMBU_NETWORK_ERR_PRINT_SP_GET_NOTIFICATION_TIMEOUT         -3050 //timeout to get notification
+#define BAMBU_NETWORK_ERR_PRINT_SP_GET_NOTIFICATION_FAILED          -3060 //failed to get notification
+#define BAMBU_NETWORK_ERR_PRINT_SP_FILE_NOT_EXIST                   -3070 //3mf file is not exists
+#define BAMBU_NETWORK_ERR_PRINT_SP_GET_USER_UPLOAD_FAILED           -3080 //failed to get_user_upload
+#define BAMBU_NETWORK_ERR_PRINT_SP_FILE_OVER_SIZE                   -3090 //the size of the uploaded file cannot exceed 1 GB
+#define BAMBU_NETWORK_ERR_PRINT_SP_UPLOAD_3MF_TO_OSS_FAILED         -3100 //failed to  upload 3mf to oss
+#define BAMBU_NETWORK_ERR_PRINT_SP_PATCH_PROJECT_FAILED             -3110 //failed to patch project
+#define BAMBU_NETWORK_ERR_PRINT_SP_POST_TASK_FAILED                 -3120 //failed to post task
+#define BAMBU_NETWORK_ERR_PRINT_SP_WAIT_PRINTER_FAILED              -3130 //failed to wait the ack from printer
+#define BAMBU_NETOWRK_ERR_PRINT_SP_ENC_FLAG_NOT_READY               -3140 //failed to get flag info
 
-#define BAMBU_NETWORK_ERR_PRINT_LP_FILE_OVER_SIZE                   -4010
-#define BAMBU_NETWORK_ERR_PRINT_LP_UPLOAD_FTP_FAILED                -4020
-#define BAMBU_NETWORK_ERR_PRINT_LP_PUBLISH_MSG_FAILED               -4030
+//start_local_print   error
+#define BAMBU_NETWORK_ERR_PRINT_LP_FILE_OVER_SIZE                   -4010 //the size of the uploaded file cannot exceed 1 GB
+#define BAMBU_NETWORK_ERR_PRINT_LP_UPLOAD_FTP_FAILED                -4020 //failed to upload ftp
+#define BAMBU_NETWORK_ERR_PRINT_LP_PUBLISH_MSG_FAILED               -4030 //failed to send mqtt message to  device
 
-#define BAMBU_NETWORK_ERR_PRINT_SG_UPLOAD_FTP_FAILED                -5010
+//start_send_gcode_to_sdcard error
+#define BAMBU_NETWORK_ERR_PRINT_SG_UPLOAD_FTP_FAILED                -5010 //failed to upload ftp
 
-#define BAMBU_NETWORK_ERR_CONNECTION_TO_PRINTER_FAILED              -6010
-#define BAMBU_NETWORK_ERR_CONNECTION_TO_SERVER_FAILED               -6020
+//connection to printer failed
+#define BAMBU_NETWORK_ERR_CONNECTION_TO_PRINTER_FAILED              -6010 //Connection to printer failed
+#define BAMBU_NETWORK_ERR_CONNECTION_TO_SERVER_FAILED               -6020 //Connection to server failed
+
 
 #define BAMBU_NETWORK_LIBRARY               "bambu_networking"
 #define BAMBU_NETWORK_AGENT_NAME            "bambu_network_agent"
 
+
+//iot preset type strings
 #define IOT_PRINTER_TYPE_STRING     "printer"
 #define IOT_FILAMENT_STRING         "filament"
 #define IOT_PRINT_TYPE_STRING       "print"
@@ -117,31 +126,38 @@ namespace Slic3r {
 #define IOT_JSON_KEY_NAME               "name"
 #define IOT_JSON_KEY_TYPE               "type"
 #define IOT_JSON_KEY_UPDATE_TIME        "update_time"
-#define IOT_JSON_KEY_UPDATED_TIME       "updated_time"
+#define IOT_JSON_KEY_UPDATED_TIME        "updated_time"
 #define IOT_JSON_KEY_BASE_ID            "base_id"
 #define IOT_JSON_KEY_SETTING_ID         "setting_id"
 #define IOT_JSON_KEY_FILAMENT_ID        "filament_id"
 #define IOT_JSON_KEY_USER_ID            "user_id"
 
-typedef std::function<void(int online_login, bool login)> OnUserLoginFn;
-typedef std::function<void(std::string topic_str)> OnPrinterConnectedFn;
+// printer callbacks
+typedef std::function<void(std::string topic_str)>  OnPrinterConnectedFn;
 typedef std::function<void(int status, std::string dev_id, std::string msg)> OnLocalConnectedFn;
-typedef std::function<void(int return_code, int reason_code)> OnServerConnectedFn;
+typedef std::function<void(int return_code, int reason_code)>                OnServerConnectedFn;
 typedef std::function<void(std::string dev_id, std::string msg)> OnMessageFn;
+// http callbacks
 typedef std::function<void(unsigned http_code, std::string http_body)> OnHttpErrorFn;
-typedef std::function<std::string()> GetCountryCodeFn;
-typedef std::function<void(std::string topic)> GetSubscribeFailureFn;
+typedef std::function<std::string()>                GetCountryCodeFn;
+typedef std::function<void(std::string topic)>      GetSubscribeFailureFn;
+// print callbacks
 typedef std::function<void(int status, int code, std::string msg)> OnUpdateStatusFn;
-typedef std::function<bool()> WasCancelledFn;
+typedef std::function<bool()>                       WasCancelledFn;
 typedef std::function<bool(int status, std::string job_info)> OnWaitFn;
+typedef std::function<void(int online_login, bool login)> OnUserLoginFn;
 // local callbacks
 typedef std::function<void(std::string dev_info_json_str)> OnMsgArrivedFn;
+// queue call to main thread
 typedef std::function<void(std::function<void()>)> QueueOnMainFn;
+
 typedef std::function<void(int progress)> ProgressFn;
 typedef std::function<void(int retcode, std::string info)> LoginFn;
 typedef std::function<void(int result, std::string info)> ResultFn;
 typedef std::function<bool()> CancelFn;
 typedef std::function<bool(std::map<std::string, std::string> info)> CheckFn;
+
+//err callbacks
 typedef std::function<void(std::string url, int status)> OnServerErrFn;
 
 enum SendingPrintJobStage {
@@ -149,7 +165,7 @@ enum SendingPrintJobStage {
     PrintingStageUpload = 1,
     PrintingStageWaiting = 2,
     PrintingStageSending = 3,
-    PrintingStageRecord = 4,
+    PrintingStageRecord  = 4,
     PrintingStageWaitPrinter = 5,
     PrintingStageFinished = 6,
     PrintingStageERROR = 7,
@@ -157,10 +173,10 @@ enum SendingPrintJobStage {
 };
 
 enum PublishingStage {
-    PublishingCreate = 0,
-    PublishingUpload = 1,
-    PublishingWaiting = 2,
-    PublishingJumpUrl = 3,
+    PublishingCreate    = 0,
+    PublishingUpload    = 1,
+    PublishingWaiting   = 2,
+    PublishingJumpUrl   = 3,
 };
 
 enum BindJobStage {
@@ -179,52 +195,112 @@ enum ConnectStatus {
 };
 
 struct detectResult {
-    std::string result_msg;
-    std::string command;
-    std::string dev_id;
-    std::string model_id;
-    std::string dev_name;
-    std::string version;
-    std::string bind_state;
-    std::string connect_type;
+    std::string    result_msg;
+    std::string    command;
+    std::string    dev_id;
+    std::string    model_id;
+    std::string    dev_name;
+    std::string    version;
+    std::string    bind_state;
+    std::string    connect_type;
 };
 
+/* print job*/
 struct PrintParams_Legacy {
-    std::string dev_id;
-    std::string task_name;
-    std::string project_name;
-    std::string preset_name;
-    std::string filename;
-    std::string config_filename;
-    int plate_index;
-    std::string ftp_folder;
-    std::string ftp_file;
-    std::string ftp_file_md5;
-    std::string ams_mapping;
-    std::string ams_mapping_info;
-    std::string connection_type;
-    std::string comments;
-    int origin_profile_id = 0;
-    int stl_design_id = 0;
-    std::string origin_model_id;
-    std::string print_type;
-    std::string dst_file;
-    std::string dev_name;
-    std::string dev_ip;
-    bool use_ssl_for_ftp;
-    bool use_ssl_for_mqtt;
-    std::string username;
-    std::string password;
-    bool task_bed_leveling;
-    bool task_flow_cali;
-    bool task_vibration_cali;
-    bool task_layer_inspect;
-    bool task_record_timelapse;
-    bool task_use_ams;
-    std::string task_bed_type;
-    std::string extra_options;
+    /* basic info */
+    std::string     dev_id;
+    std::string     task_name;
+    std::string     project_name;
+    std::string     preset_name;
+    std::string     filename;
+    std::string     config_filename;
+    int             plate_index;
+    std::string     ftp_folder;
+    std::string     ftp_file;
+    std::string     ftp_file_md5;
+    std::string     ams_mapping;
+    std::string     ams_mapping_info;
+    std::string     connection_type;
+    std::string     comments;
+    int             origin_profile_id = 0;
+    int             stl_design_id = 0;
+    std::string     origin_model_id;
+    std::string     print_type;
+    std::string     dst_file;
+    std::string     dev_name;
+
+    /* access options */
+    std::string     dev_ip;
+    bool            use_ssl_for_ftp;
+    bool            use_ssl_for_mqtt;
+    std::string     username;
+    std::string     password;
+
+    /*user options */
+    bool            task_bed_leveling;      /* bed leveling of task */
+    bool            task_flow_cali;         /* flow calibration of task */
+    bool            task_vibration_cali;    /* vibration calibration of task */
+    bool            task_layer_inspect;     /* first layer inspection of task */
+    bool            task_record_timelapse;  /* record timelapse of task */
+    bool            task_use_ams;
+    std::string     task_bed_type;
+    std::string     extra_options;
 };
 
+/* print job, as the 02.03.00 series expects it. The 02.08.01 series inserted
+   task_timelapse_use_internal, extruder_cali_manual_mode, svc_context and slicer_uid into
+   PrintParams; two of them sit mid-struct, so an older plug-in misreads every field from
+   task_use_ams onwards if handed the current layout. Rebuild it with as_0203() instead. */
+struct PrintParams_0203 {
+    /* basic info */
+    std::string     dev_id;
+    std::string     task_name;
+    std::string     project_name;
+    std::string     preset_name;
+    std::string     filename;
+    std::string     config_filename;
+    int             plate_index;
+    std::string     ftp_folder;
+    std::string     ftp_file;
+    std::string     ftp_file_md5;
+    std::string     nozzle_mapping;
+    std::string     ams_mapping;
+    std::string     ams_mapping2;
+    std::string     ams_mapping_info;
+    std::string     nozzles_info;
+    std::string     connection_type;
+    std::string     comments;
+    int             origin_profile_id = 0;
+    int             stl_design_id = 0;
+    std::string     origin_model_id;
+    std::string     print_type;
+    std::string     dst_file;
+    std::string     dev_name;
+
+    /* access options */
+    std::string     dev_ip;
+    bool            use_ssl_for_ftp;
+    bool            use_ssl_for_mqtt;
+    std::string     username;
+    std::string     password;
+
+    /*user options */
+    bool            task_bed_leveling;      /* bed leveling of task */
+    bool            task_flow_cali;         /* flow calibration of task */
+    bool            task_vibration_cali;    /* vibration calibration of task */
+    bool            task_layer_inspect;     /* first layer inspection of task */
+    bool            task_record_timelapse;  /* record timelapse of task */
+    bool            task_use_ams;
+    std::string     task_bed_type;
+    std::string     extra_options;
+    int             auto_bed_leveling{ 0 };
+    int             auto_flow_cali{ 0 };
+    int             auto_offset_cali{ 0 };
+    bool            task_ext_change_assist;
+    bool            try_emmc_print;
+};
+
+/* print job*/
 struct PrintParams {
     /* basic info */
     std::string     dev_id;
@@ -278,7 +354,8 @@ struct PrintParams {
     std::string     slicer_uid;
 };
 
-struct TaskQueryParams {
+struct TaskQueryParams
+{
     std::string dev_id;
     int status = 0;
     int offset = 0;
@@ -328,20 +405,30 @@ struct AmsSyncParams {
 };
 
 struct PublishParams {
-    std::string project_name;
-    std::string project_3mf_file;
-    std::string preset_name;
-    std::string project_model_id;
-    std::string design_id;
-    std::string config_filename;
+    std::string     project_name;
+    std::string     project_3mf_file;
+    std::string     preset_name;
+    std::string     project_model_id;
+    std::string     design_id;
+    std::string     config_filename;
 };
 
 struct CertificateInformation {
-    std::string issuer;
-    std::string sub_name;
-    std::string start_date;
-    std::string end_date;
-    std::string serial_number;
+    std::string     issuer;
+    std::string     sub_name;
+    std::string     start_date;
+    std::string     end_date;
+    std::string     serial_number;
+};
+
+// The plug-in ABI generation a library speaks. Generations differ in by-value struct layouts and
+// function signatures, so a call must go through the matching typedefs (see BBLPrinterAgent) -
+// the wrong one corrupts the stack rather than failing cleanly.
+enum class NetworkAbi {
+    Unsupported, // no generation in this build can call it - never dispatch through it
+    Legacy,      // 01.10.01: PrintParams_Legacy; send_message/send_message_to_printer take no flag
+    V0203,       // 02.03.00: PrintParams_0203; bind takes no dev_model
+    Current,     // 02.08.01: the layouts and signatures this build declares directly
 };
 
 struct NetworkLibraryVersion {
@@ -350,15 +437,18 @@ struct NetworkLibraryVersion {
     const char* url_override;
     bool is_latest;
     const char* warning;
+    NetworkAbi abi;
 };
 
-// Only the latest series and the legacy build are offered/loadable: the host binds the
-// modern ABI (by-value struct layouts, function signatures) of exactly one series, plus
-// a dedicated shim for the legacy build. Older 02.0x series expect different layouts
-// and must not be loaded - see is_supported_network_version().
+// Every row names the generation that can call it, so a series can never be offered without a
+// host-side ABI for it. Series with no generation - 02.01.01, 02.00.02 and older - must stay out;
+// is_supported_network_version() is the gate that keeps them from loading.
 static const NetworkLibraryVersion AVAILABLE_NETWORK_VERSIONS[] = {
-    {BAMBU_NETWORK_AGENT_VERSION, BAMBU_NETWORK_AGENT_VERSION, nullptr, true, nullptr},
-    {BAMBU_NETWORK_AGENT_VERSION_LEGACY, BAMBU_NETWORK_AGENT_VERSION_LEGACY " (legacy)", nullptr, false, nullptr},
+    {BAMBU_NETWORK_AGENT_VERSION, BAMBU_NETWORK_AGENT_VERSION, nullptr, true, nullptr, NetworkAbi::Current},
+    {"02.03.00", "02.03.00", nullptr, false,
+     "An older plug-in series. Features that need newer plug-in support, such as print-failure "
+     "snapshots in the device error dialog, are unavailable.", NetworkAbi::V0203},
+    {BAMBU_NETWORK_AGENT_VERSION_LEGACY, BAMBU_NETWORK_AGENT_VERSION_LEGACY " (legacy)", nullptr, false, nullptr, NetworkAbi::Legacy},
 };
 
 static const size_t AVAILABLE_NETWORK_VERSIONS_COUNT = sizeof(AVAILABLE_NETWORK_VERSIONS) / sizeof(AVAILABLE_NETWORK_VERSIONS[0]);
@@ -371,23 +461,43 @@ inline const char* get_latest_network_version() {
     return AVAILABLE_NETWORK_VERSIONS[0].version;
 }
 
-// True when the version can be loaded through the ABI this build was compiled against:
-// an exact whitelist entry, or a build from the same AA.BB.CC series as a non-legacy
-// whitelist entry (the plugin ABI is stable within a series, and the OTA sync only ever
-// installs same-series updates). Anything else - in particular older 02.0x series a
-// previous Orca release whitelisted - expects different by-value struct layouts and
-// function signatures and must not be loaded.
-inline bool is_supported_network_version(const std::string& version) {
+// The AA.BB.CC series of a modern version string - the plug-in's stored identity. The 4th
+// component is only which build of the series happens to be installed and is read live from
+// the loaded plug-in for display. Legacy keeps its exact string (the shim matches exactly).
+inline std::string network_plugin_series(const std::string& version) {
+    if (version.empty() || version == BAMBU_NETWORK_AGENT_VERSION_LEGACY)
+        return version;
+    return version.size() >= 8 ? version.substr(0, 8) : version;
+}
+
+// Index of the whitelist entry that can load this version: an exact match, or a build of the same
+// AA.BB.CC series as a non-legacy entry (the ABI is stable within a series, and the OTA sync only
+// installs same-series updates). Legacy matches exactly only - a sibling build of that series
+// would come through the modern layout. AVAILABLE_NETWORK_VERSIONS_COUNT when nothing matches.
+inline size_t find_network_version_index(const std::string& version) {
+    const std::string series = network_plugin_series(version);
     for (size_t i = 0; i < AVAILABLE_NETWORK_VERSIONS_COUNT; ++i) {
         const std::string base = AVAILABLE_NETWORK_VERSIONS[i].version;
         if (version == base)
-            return true;
+            return i;
         if (base == BAMBU_NETWORK_AGENT_VERSION_LEGACY)
             continue;
-        if (version.size() >= 8 && base.size() >= 8 && version.compare(0, 8, base, 0, 8) == 0)
-            return true;
+        if (series == base)
+            return i;
     }
-    return false;
+    return AVAILABLE_NETWORK_VERSIONS_COUNT;
+}
+
+// True when a whitelisted series can load the version through an ABI this build implements.
+inline bool is_supported_network_version(const std::string& version) {
+    return find_network_version_index(version) < AVAILABLE_NETWORK_VERSIONS_COUNT;
+}
+
+// The generation to call a loaded library through. Unsupported for anything the load gate rejects,
+// so a mislabelled library reaches no plug-in call instead of a layout it does not share.
+inline NetworkAbi network_plugin_abi(const std::string& version) {
+    const size_t i = find_network_version_index(version);
+    return i < AVAILABLE_NETWORK_VERSIONS_COUNT ? AVAILABLE_NETWORK_VERSIONS[i].abi : NetworkAbi::Unsupported;
 }
 
 struct NetworkLibraryVersionInfo {
@@ -418,8 +528,8 @@ struct NetworkLibraryVersionInfo {
     }
 
     static NetworkLibraryVersionInfo from_discovered(const std::string& full_version,
-                                                     const std::string& base,
-                                                     const std::string& sfx) {
+                                                      const std::string& base,
+                                                      const std::string& sfx) {
         return {full_version, base, sfx, full_version, "", false, "", true};
     }
 };
@@ -432,15 +542,6 @@ inline std::string extract_base_version(const std::string& full_version) {
 inline std::string extract_suffix(const std::string& full_version) {
     auto pos = full_version.find('-');
     return (pos == std::string::npos) ? "" : full_version.substr(pos + 1);
-}
-
-// The AA.BB.CC series of a modern version string - the plug-in's stored identity. The 4th
-// component is only which build of the series happens to be installed and is read live from
-// the loaded plug-in for display. Legacy keeps its exact string (the shim matches exactly).
-inline std::string network_plugin_series(const std::string& version) {
-    if (version.empty() || version == BAMBU_NETWORK_AGENT_VERSION_LEGACY)
-        return version;
-    return version.size() >= 8 ? version.substr(0, 8) : version;
 }
 
 // True when the version is a pure dotted-numeric build (AA.BB.CC or AA.BB.CC.DD) whose identity
@@ -467,10 +568,11 @@ struct NetworkLibraryLoadError {
     std::string attempted_path;
 };
 
-enum class MessageFlag : int {
+enum class MessageFlag : int
+{
     MSG_FLAG_NONE = 0,
-    MSG_SIGN = 1 << 0,
-    MSG_ENCRYPT = 1 << 1,
+    MSG_SIGN      = 1 << 0,
+    MSG_ENCRYPT   = 1 << 1,
 };
 
 }

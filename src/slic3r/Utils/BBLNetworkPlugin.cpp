@@ -146,6 +146,16 @@ std::string list_runtime_component_dir_files(const boost::filesystem::path& comp
     return out;
 }
 
+// Named in the load log: the bound generation is what ties a crash report to an ABI choice.
+// The label is the whitelist row's series, so it can never drift from the dispatch table.
+const char* network_abi_name(NetworkAbi abi)
+{
+    for (size_t i = 0; i < AVAILABLE_NETWORK_VERSIONS_COUNT; ++i)
+        if (AVAILABLE_NETWORK_VERSIONS[i].abi == abi)
+            return AVAILABLE_NETWORK_VERSIONS[i].version;
+    return "unsupported";
+}
+
 } // namespace
 
 // ============================================================================
@@ -528,18 +538,20 @@ int BBLNetworkPlugin::initialize(bool using_backup, const std::string& version)
 
     load_all_function_pointers();
 
-    m_use_legacy_network = is_legacy_version(version);
+    // Key the generation on the library that actually loaded, not the version asked for:
+    // resolve_library_path() serves any same-series build. m_get_version is read directly, not
+    // via get_version(), which would substitute the "00.00.00.00" sentinel and pick no generation.
+    const std::string loaded_version = m_get_version ? m_get_version() : std::string();
+    m_network_abi = network_plugin_abi(loaded_version.empty() ? version : loaded_version);
 
-    std::string loaded_version;
-    if (m_get_version) {
-        loaded_version = m_get_version();
-        if (!loaded_version.empty()) {
-            m_use_legacy_network = is_legacy_version(loaded_version);
-        }
+    // A library reporting a series this build has no ABI for stays loaded but uncallable -
+    // check_networking_version() then reports it as incompatible and offers the update flow.
+    if (m_network_abi == NetworkAbi::Unsupported) {
+        BOOST_LOG_TRIVIAL(warning) << "BBLNetworkPlugin::initialize: no ABI for version "
+            << (loaded_version.empty() ? version : loaded_version) << ", plug-in calls are disabled";
     }
 
-    BOOST_LOG_TRIVIAL(info) << "BBLNetworkPlugin::initialize: legacy_mode="
-        << (m_use_legacy_network ? "true" : "false")
+    BOOST_LOG_TRIVIAL(info) << "BBLNetworkPlugin::initialize: abi=" << network_abi_name(m_network_abi)
         << ", linux_runtime=" << (linux_runtime ? "true" : "false")
         << ", library=" << library
         << ", version=" << (loaded_version.empty() ? "unknown" : loaded_version)
@@ -567,6 +579,17 @@ int BBLNetworkPlugin::initialize(bool using_backup, const std::string& version)
             detail,
             library
         );
+        unload_unlocked();
+        return -1;
+    }
+
+    // The Linux runtime forwarder and host only implement the current plug-in ABI; handing them
+    // an older series' layouts (PrintParams_0203/_Legacy, pre-02.08 bind) would corrupt the call.
+    if (linux_runtime && m_network_abi != NetworkAbi::Current) {
+        const std::string detail = "The Linux runtime only supports the " + std::string(BAMBU_NETWORK_AGENT_VERSION)
+            + " plug-in series, loaded " + (loaded_version.empty() ? version : loaded_version);
+        BOOST_LOG_TRIVIAL(error) << "BBLNetworkPlugin::initialize: " << detail;
+        set_load_error("Network plug-in is incompatible", detail, library);
         unload_unlocked();
         return -1;
     }
@@ -636,7 +659,9 @@ int BBLNetworkPlugin::unload_unlocked()
     m_source_module = NULL;
     clear_all_function_pointers();
 
-    m_use_legacy_network = false;
+    // Safe to reset only because every pointer was nulled just above and every dispatcher is
+    // guarded on a non-null pointer, so no stale generation is reachable.
+    m_network_abi = NetworkAbi::Unsupported;
 
     return 0;
 }
@@ -788,7 +813,7 @@ void* BBLNetworkPlugin::get_function(const char* name)
         return function;
 
 #if defined(_MSC_VER) || defined(_WIN32)
-    function = GetProcAddress(m_networking_module, name);
+    function = reinterpret_cast<void*>(GetProcAddress(m_networking_module, name));
 #else
     function = dlsym(m_networking_module, name);
 #endif
@@ -973,7 +998,7 @@ void BBLNetworkPlugin::set_load_error(const std::string& message,
 }
 
 // ============================================================================
-// Legacy Helper
+// ABI Conversion Helpers
 // ============================================================================
 
 PrintParams_Legacy BBLNetworkPlugin::as_legacy(PrintParams& param)
@@ -1015,6 +1040,57 @@ PrintParams_Legacy BBLNetworkPlugin::as_legacy(PrintParams& param)
     l.extra_options         = std::move(param.extra_options);
 
     return l;
+}
+
+// Every PrintParams field except the four the 02.08.01 series added
+// (task_timelapse_use_internal, extruder_cali_manual_mode, svc_context, slicer_uid).
+PrintParams_0203 BBLNetworkPlugin::as_0203(PrintParams& param)
+{
+    PrintParams_0203 p;
+
+    p.dev_id                 = std::move(param.dev_id);
+    p.task_name              = std::move(param.task_name);
+    p.project_name           = std::move(param.project_name);
+    p.preset_name            = std::move(param.preset_name);
+    p.filename               = std::move(param.filename);
+    p.config_filename        = std::move(param.config_filename);
+    p.plate_index            = param.plate_index;
+    p.ftp_folder             = std::move(param.ftp_folder);
+    p.ftp_file               = std::move(param.ftp_file);
+    p.ftp_file_md5           = std::move(param.ftp_file_md5);
+    p.nozzle_mapping         = std::move(param.nozzle_mapping);
+    p.ams_mapping            = std::move(param.ams_mapping);
+    p.ams_mapping2           = std::move(param.ams_mapping2);
+    p.ams_mapping_info       = std::move(param.ams_mapping_info);
+    p.nozzles_info           = std::move(param.nozzles_info);
+    p.connection_type        = std::move(param.connection_type);
+    p.comments               = std::move(param.comments);
+    p.origin_profile_id      = param.origin_profile_id;
+    p.stl_design_id          = param.stl_design_id;
+    p.origin_model_id        = std::move(param.origin_model_id);
+    p.print_type             = std::move(param.print_type);
+    p.dst_file               = std::move(param.dst_file);
+    p.dev_name               = std::move(param.dev_name);
+    p.dev_ip                 = std::move(param.dev_ip);
+    p.use_ssl_for_ftp        = param.use_ssl_for_ftp;
+    p.use_ssl_for_mqtt       = param.use_ssl_for_mqtt;
+    p.username               = std::move(param.username);
+    p.password               = std::move(param.password);
+    p.task_bed_leveling      = param.task_bed_leveling;
+    p.task_flow_cali         = param.task_flow_cali;
+    p.task_vibration_cali    = param.task_vibration_cali;
+    p.task_layer_inspect     = param.task_layer_inspect;
+    p.task_record_timelapse  = param.task_record_timelapse;
+    p.task_use_ams           = param.task_use_ams;
+    p.task_bed_type          = std::move(param.task_bed_type);
+    p.extra_options          = std::move(param.extra_options);
+    p.auto_bed_leveling      = param.auto_bed_leveling;
+    p.auto_flow_cali         = param.auto_flow_cali;
+    p.auto_offset_cali       = param.auto_offset_cali;
+    p.task_ext_change_assist = param.task_ext_change_assist;
+    p.try_emmc_print         = param.try_emmc_print;
+
+    return p;
 }
 
 // ============================================================================
@@ -1278,7 +1354,12 @@ std::vector<NetworkLibraryVersionInfo> get_all_available_versions(const std::str
     std::vector<NetworkLibraryVersionInfo> result;
     std::set<std::string> all_known_versions;
 
+    // Under the Linux runtime only the current ABI can be called (see initialize()).
+    const bool current_abi_only = Slic3r::SlicerLinuxRuntime::enabled();
+
     for (size_t i = 0; i < AVAILABLE_NETWORK_VERSIONS_COUNT; ++i) {
+        if (current_abi_only && AVAILABLE_NETWORK_VERSIONS[i].abi != NetworkAbi::Current)
+            continue;
         result.push_back(NetworkLibraryVersionInfo::from_static(AVAILABLE_NETWORK_VERSIONS[i]));
         all_known_versions.insert(AVAILABLE_NETWORK_VERSIONS[i].version);
     }
@@ -1296,6 +1377,8 @@ std::vector<NetworkLibraryVersionInfo> get_all_available_versions(const std::str
         if (is_series_managed_version(version))
             continue;
         if (!is_supported_network_version(version))
+            continue;
+        if (current_abi_only && network_plugin_abi(version) != NetworkAbi::Current)
             continue;
         const std::string series = network_plugin_series(version);
         const std::string sfx    = version.size() > series.size() ? version.substr(series.size()) : version;

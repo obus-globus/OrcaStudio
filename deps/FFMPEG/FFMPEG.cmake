@@ -1,39 +1,36 @@
 set(_conf_cmd ./configure)
 
 if (MSVC)
-    set(_dstdir ${DESTDIR})
     set(_source_dir "${CMAKE_BINARY_DIR}/dep_FFMPEG-prefix/src/dep_FFMPEG")
+
+    set(PREBUILD_URL_arm64 "https://github.com/Noisyfox/FFmpeg-Builds-Orca/releases/download/autobuild-2026-07-17-14-28/ffmpeg-n7.0.3-31-g9b6ffd74b5-winarm64-orca-shared-7.0.zip")
+    set(PREBUILD_HASH_arm64 "12f4140279f2f8469885e1b5b2e8be9d788882914c21523cacd56989f3548054")
+    set(PREBUILD_URL_x64 "https://github.com/Noisyfox/FFmpeg-Builds-Orca/releases/download/autobuild-2026-07-17-14-28/ffmpeg-n7.0.3-31-g9b6ffd74b5-win64-orca-shared-7.0.zip")
+    set(PREBUILD_HASH_x64 "e65916020ddb9ef84b2666dfbcbfc9b1d67f69d15b4a66db53754637bf2d498c")
+
     ExternalProject_Add(dep_FFMPEG
-        URL https://github.com/bambulab/ffmpeg_prebuilts/releases/download/7.0.2/7.0.2_msvc.zip
-        URL_HASH SHA256=DF44AE6B97CE84C720695AE7F151B4A9654915D1841C68F10D62A1189E0E7181
+        URL ${PREBUILD_URL_${DEPS_ARCH}}
+        URL_HASH SHA256=${PREBUILD_HASH_${DEPS_ARCH}}
         DOWNLOAD_DIR ${DEP_DOWNLOAD_DIR}/FFMPEG
         CONFIGURE_COMMAND ""
         BUILD_COMMAND ""
         INSTALL_COMMAND
-            COMMAND ${CMAKE_COMMAND} -E copy_directory "${_source_dir}/bin" "${_dstdir}/bin"
-            COMMAND ${CMAKE_COMMAND} -E copy_directory "${_source_dir}/lib" "${_dstdir}/lib"
-            COMMAND ${CMAKE_COMMAND} -E copy_directory "${_source_dir}/include" "${_dstdir}/include"
+            COMMAND ${CMAKE_COMMAND} -E copy_directory  "${_source_dir}/bin" "${DESTDIR}/bin"
+            COMMAND ${CMAKE_COMMAND} -E copy_directory  "${_source_dir}/lib" "${DESTDIR}/lib"
+            COMMAND ${CMAKE_COMMAND} -E copy_directory  "${_source_dir}/include" "${DESTDIR}/include"
     )
 
 else ()
-    set(_extra_cmd "--pkg-config-flags=\"--static\"")
-    string(APPEND _extra_cmd "--extra-cflags=\"-I ${DESTDIR}/include\"")
-    string(APPEND _extra_cmd "--extra-ldflags=\"-I ${DESTDIR}/lib\"")
-    string(APPEND _extra_cmd "--extra-libs=\"-lpthread -lm\"")
-    string(APPEND _extra_cmd "--ld=\"g++\"")
-    string(APPEND _extra_cmd "--bindir=\"${DESTDIR}/bin\"")
-    string(APPEND _extra_cmd "--enable-gpl")
-    string(APPEND _extra_cmd "--enable-nonfree")
-
     if (APPLE)
-        # Build relocatable dylibs at the source instead of relying on
-        # install_name_tool to grow fixed-size Mach-O load-command tables later.
-        # The deployment flag applies to both native arm64 and cross-built x86_64.
-        set(_darwin_cmd
-            --install-name-dir=@rpath
+        set(_minos_cmd
             "--extra-cflags=-mmacosx-version-min=${DEP_OSX_TARGET}"
-            "--extra-ldflags=-mmacosx-version-min=${DEP_OSX_TARGET} -Wl,-headerpad_max_install_names"
-        )
+            "--extra-ldflags=-mmacosx-version-min=${DEP_OSX_TARGET}"
+            )
+        # Static FFmpeg: nothing to bundle into the .app, no rpath handling.
+        # Disable the VideoToolbox/AudioToolbox HW-accel paths: the player decodes
+        # in software (swscale), and the auto-detected HW objects would drag in
+        # system frameworks that the static libs would then depend on.
+        set(_link_cmd --enable-static --disable-shared --disable-videotoolbox --disable-audiotoolbox)
         if (IS_CROSS_COMPILE)
             set(_cross_cmd --enable-cross-compile)
             set(_pic_cmd --enable-pic)
@@ -45,7 +42,9 @@ else ()
                 set(_cc_cmd "--cc=clang -arch x86_64")
             endif()
         endif()
-    endif()
+    else ()
+        set(_link_cmd --enable-shared)
+    endif ()
 
     set(_build_j -j)
     if(DEFINED ENV{CMAKE_BUILD_PARALLEL_LEVEL})
@@ -53,17 +52,17 @@ else ()
     endif()
 
     ExternalProject_Add(dep_FFMPEG
-        URL https://github.com/FFmpeg/FFmpeg/archive/refs/tags/n7.0.2.tar.gz
-        URL_HASH SHA256=5EB46D18D664A0CCADF7B0ADEE03BD3B7FA72893D667F36C69E202A807E6D533
+        URL https://github.com/FFmpeg/FFmpeg/archive/refs/tags/n7.0.3.tar.gz
+        URL_HASH SHA256=DEEDCABE339165214A3637DF4C86A507AEF0D793CF8774FF68735F4737E8DDBC
         DOWNLOAD_DIR ${DEP_DOWNLOAD_DIR}/FFMPEG
         CONFIGURE_COMMAND ${_conf_cmd}
             ${_cross_cmd}
             ${_pic_cmd}
             ${_arch_cmd}
             ${_cc_cmd}
-            ${_darwin_cmd}
-            --prefix="${DESTDIR}"
-            --enable-shared
+            "--prefix=${DESTDIR}"
+            ${_link_cmd}
+            ${_minos_cmd}
             --disable-doc
             --enable-small
             --disable-outdevs

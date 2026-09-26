@@ -11,7 +11,7 @@ ARCHITECTURE & MAPPING LOGIC:
   - Heater 0: Extruder 2 (physical RIGHT nozzle slot, T0/T2/T3/T4)
   - Heater 1: Extruder 1 (physical LEFT nozzle slot, T1)
 - The active heater mapping is derived dynamically based on active G-code temperature signals:
-  - When filament X is active and heater N is heated to printing temperature (>200°C),
+  - When filament X is active and heater N is heated to printing temperature (>200°C), 
     we associate filament X with heater N.
 
 ================================================================================
@@ -68,15 +68,15 @@ def parse_filaments_and_colors(zip_file):
 def parse_nozzle_groups(zip_file):
     """
     Parse filament-to-extruder mapping from filament_maps in slice_info.config.
-
+    
     filament_maps = "2 1 2 2 2" → {0: 2, 1: 1, 2: 2, 3: 2, 4: 2}
-
+    
     Returns:
         extruder_map: {filament_id_0based: extruder_id}
         extruder_groups: {extruder_id: [list of filament IDs 0-based]}
     """
     extruder_map = {}
-
+    
     try:
         xml_data = zip_file.read("Metadata/slice_info.config").decode("utf-8", errors="replace")
         root = ET.fromstring(xml_data)
@@ -91,11 +91,11 @@ def parse_nozzle_groups(zip_file):
                     break
     except Exception as e:
         print(f"  Warning: could not parse filament_maps: {e}")
-
+    
     extruder_groups = {}
     for fid, eid in extruder_map.items():
         extruder_groups.setdefault(eid, []).append(fid)
-
+    
     return extruder_map, extruder_groups
 
 
@@ -271,16 +271,16 @@ def build_timeline_and_interpolate(track, tool_changes, m73_points, total_lines,
             if rs <= l <= re_:
                 return True
         return False
-
+    
     for k in range(len(timeline) - 1):
         line1, time1 = timeline[k]
         line2, time2 = timeline[k + 1]
-
+        
         dT = time2 - time1
         dL = line2 - line1
         if dL <= 0:
             continue
-
+            
         weights = []
         total_w = 0.0
         for l in range(line1, line2 + 1):
@@ -290,11 +290,11 @@ def build_timeline_and_interpolate(track, tool_changes, m73_points, total_lines,
                 w += m400_weights[l] * 50.0
             weights.append((l, w))
             total_w += w
-
+            
         current_t = time1
         if total_w == 0:
             total_w = 1.0
-
+            
         for l, w in weights:
             line_to_time[l] = current_t
             current_t += (w / total_w) * dT
@@ -303,7 +303,7 @@ def build_timeline_and_interpolate(track, tool_changes, m73_points, total_lines,
         l_round = int(round(line))
         if l_round in line_to_time:
             return line_to_time[l_round]
-
+            
         if line <= timeline[0][0]:
             return timeline[0][1]
         if line >= timeline[-1][0]:
@@ -455,7 +455,7 @@ def parse_file_data(filepath):
         total_duration, get_time = build_timeline_and_interpolate(track, tool_changes, m73_points, total_lines, m400_weights,
                                                                     gcode_lines=raw_gcode_lines)
         end_gcode_time = get_time(end_gcode_line)
-
+        
         # Convert preheat lines to time (seconds)
         preheats = []
         for ev in raw_preheats:
@@ -492,9 +492,9 @@ def parse_file_data(filepath):
                     "target_temp": ev["cooldown_temp"],
                     "nozzle_num": ev.get("nozzle_num", -1)
                 })
-
+        
         heater_to_ext = determine_heater_to_extruder(track, extruder_map)
-
+        
         nozzle_map = {}
         for fid, ext_id in extruder_map.items():
             nozzle_map[fid] = heater_to_ext.get(ext_id, 0)
@@ -520,37 +520,37 @@ def parse_file_data(filepath):
             all_sub_zones.append({"type": "nc", "start_line": s, "end_line": e})
         for s, e in wipe_zones_raw:
             all_sub_zones.append({"type": "wipe", "start_line": s, "end_line": e})
-
+            
         all_sub_zones.sort(key=lambda z: z["start_line"])
-
+        
         tc_zones = []
         wipe_zones = []
         prev_end_time = -1.0
         min_dur = 8.0
-
+        
         for zone in all_sub_zones:
             s_line = zone["start_line"]
             e_line = zone["end_line"]
             t_start = get_time(s_line)
             t_end = get_time(e_line)
-
+            
             actual_dur = t_end - t_start
             dur = actual_dur
             if actual_dur < min_dur:
                 dur = max(min_dur, (e_line - s_line) * 0.15)
-
+                
             if t_start < prev_end_time:
                 t_start = prev_end_time
-
+                
             t_end = t_start + dur
             prev_end_time = t_end
-
+            
             formatted_zone = {"start_time": t_start, "end_time": t_end}
             if zone["type"] == "nc":
                 tc_zones.append(formatted_zone)
             else:
                 wipe_zones.append(formatted_zone)
-
+                
         toolchange_zones = [zone_to_time(s, e) for s, e in toolchange_zones_raw]
 
 
@@ -865,7 +865,7 @@ function draw() {
     offsetX = Math.max(0, Math.min(offsetX, Math.max(0, plotW - visibleWidth)));
 
     const scaleX = t => marginLeft + (t / data.total_duration) * plotW - offsetX;
-
+    
     // Calculate dynamic visibility of toolchange markers to prevent overlapping
     [data.file1, data.file2].forEach(fileData => {
         if (!fileData) return;
@@ -924,7 +924,7 @@ function draw() {
             if (l < r) {
                 ctx.fillStyle = "rgba(75, 85, 99, 0.15)";
                 ctx.fillRect(l, p.yStart, r - l, pH);
-
+                
                 ctx.strokeStyle = "rgba(156, 163, 175, 0.5)";
                 ctx.lineWidth = 1;
                 ctx.setLineDash([4, 4]);
@@ -933,7 +933,7 @@ function draw() {
                 ctx.lineTo(l, p.yStart + pH);
                 ctx.stroke();
                 ctx.setLineDash([]);
-
+                
                 ctx.fillStyle = "#9ca3af";
                 ctx.font = "9px sans-serif";
                 ctx.fillText("End G-code", l + 6, p.yStart + 12);
@@ -1264,7 +1264,7 @@ function drawLegend(visibleWidth) {
         if (!fd) return;
         ctx.fillStyle = "#e4e4e7"; ctx.font = "bold 11px system-ui";
         ctx.fillText((idx+1) + ". " + fd.slicer + ":", lx, y); y += 15;
-
+        
         ctx.fillStyle = "#71717a"; ctx.font = "10px system-ui";
         const toolchangesCount = (fd.tool_changes || []).length;
         const nozzleChangesCount = (fd.tc_zones || []).length;
@@ -1272,7 +1272,7 @@ function drawLegend(visibleWidth) {
         const cooldownsCount = fd.cooldown_count || 0;
         ctx.fillText("T-changes: " + toolchangesCount + " | H2C: " + nozzleChangesCount, lx, y); y += 13;
         ctx.fillText("Preheats: " + preheatsCount + " | Cools: " + cooldownsCount, lx, y); y += 16;
-
+        
         ctx.font = "11px system-ui";
         Object.keys(fd.filaments).forEach(fid => {
             const fil = fd.filaments[fid];
@@ -1330,7 +1330,7 @@ function drawTooltips(scaleX, scaleY, visibleWidth, plotW) {
     updateInfoPanel(timeNum);
 
     const tips = [];
-
+    
     // 1. Always show the active printing tooltip for both files (main panels only)
     [data.file1, data.file2].forEach(fd => {
         if (!fd) return;
@@ -1346,9 +1346,9 @@ function drawTooltips(scaleX, scaleY, visibleWidth, plotW) {
         const fd = hoveredPanel.file;
         let ph = null;
         if (fd.preheats) {
-            ph = fd.preheats.find(h =>
-                h.heater === hoveredPanel.heater &&
-                timeNum >= h.start_time &&
+            ph = fd.preheats.find(h => 
+                h.heater === hoveredPanel.heater && 
+                timeNum >= h.start_time && 
                 timeNum <= h.end_time
             );
         }
@@ -1359,9 +1359,9 @@ function drawTooltips(scaleX, scaleY, visibleWidth, plotW) {
         // 2b. Precool (cooldown) region tooltip
         let pc = null;
         if (fd.precools) {
-            pc = fd.precools.find(h =>
-                h.heater === hoveredPanel.heater &&
-                timeNum >= h.start_time &&
+            pc = fd.precools.find(h => 
+                h.heater === hoveredPanel.heater && 
+                timeNum >= h.start_time && 
                 timeNum <= h.end_time
             );
         }

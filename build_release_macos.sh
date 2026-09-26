@@ -4,7 +4,7 @@ set -e
 set -o pipefail
 SECONDS=0
 
-while getopts ":dpa:snt:xbc:i:1Tuh" opt; do
+while getopts ":dpa:snt:xbc:i:j:Tuh" opt; do
   case "${opt}" in
     d )
         export BUILD_TARGET="deps"
@@ -38,8 +38,8 @@ while getopts ":dpa:snt:xbc:i:1Tuh" opt; do
     i )
         export CMAKE_IGNORE_PREFIX_PATH="${CMAKE_IGNORE_PREFIX_PATH:+$CMAKE_IGNORE_PREFIX_PATH;}$OPTARG"
         ;;
-    1 )
-        export CMAKE_BUILD_PARALLEL_LEVEL=1
+    j )
+        export CMAKE_BUILD_PARALLEL_LEVEL="$OPTARG"
         ;;
     T )
         export BUILD_TESTS="1"
@@ -58,7 +58,7 @@ while getopts ":dpa:snt:xbc:i:1Tuh" opt; do
         echo "   -b: Build without reconfiguring CMake"
         echo "   -c: Set CMake build configuration, default is Release"
         echo "   -i: Add a prefix to ignore during CMake dependency discovery (repeatable), defaults to /opt/local:/usr/local:/opt/homebrew"
-        echo "   -1: Use single job for building"
+        echo "   -j: Set the number of parallel build jobs (CMAKE_BUILD_PARALLEL_LEVEL)"
         echo "   -T: Build and run tests (set ORCA_TESTS_BUILD_ONLY=1 to build without running)"
         exit 0
         ;;
@@ -478,23 +478,7 @@ function build_slicer() {
 
             frameworks_dst="./$APP_BUNDLE_NAME/Contents/Frameworks"
             mkdir -p "$frameworks_dst"
-            deps_lib_dirs=("$DEPS/usr/local/lib" "$DEPS/lib")
-            for ffmpeg_pattern in libavcodec*.dylib libavutil*.dylib libswscale*.dylib libswresample*.dylib; do
-                found_ffmpeg=0
-                for deps_lib_dir in "${deps_lib_dirs[@]}"; do
-                    [ -d "$deps_lib_dir" ] || continue
-                    for ffmpeg_lib in "$deps_lib_dir"/$ffmpeg_pattern; do
-                        if [ -f "$ffmpeg_lib" ]; then
-                            cp -f "$ffmpeg_lib" "$frameworks_dst/$(basename "$ffmpeg_lib")"
-                            found_ffmpeg=1
-                        fi
-                    done
-                done
-                if [ "$found_ffmpeg" -eq 0 ] && [ "$ffmpeg_pattern" != "libswresample*.dylib" ]; then
-                    echo "Missing macOS FFmpeg runtime file matching ${deps_lib_dirs[*]} / $ffmpeg_pattern"
-                    exit 1
-                fi
-            done
+            # FFmpeg is linked statically on macOS (deps/FFMPEG), so no dylibs are bundled.
 
             is_macho_file() {
                 local target="$1"

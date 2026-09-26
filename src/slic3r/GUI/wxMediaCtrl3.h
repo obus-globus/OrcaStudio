@@ -8,6 +8,8 @@
 #ifndef wxMediaCtrl3_h
 #define wxMediaCtrl3_h
 
+#include <chrono>
+#include "wx/window.h"
 #include "wx/uri.h"
 #include "wx/mediactrl.h"
 #include "wx/timer.h"

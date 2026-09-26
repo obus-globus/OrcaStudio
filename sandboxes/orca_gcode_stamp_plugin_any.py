@@ -45,7 +45,7 @@ def _stamp_text(self):
 class GCodeStamp(orca.slicing.SlicingPipelineCapabilityBase):
     def get_name(self):
         return "G-code Stamp"
-
+    
     def get_default_config(self):
         return _DEFAULTS
 

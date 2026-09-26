@@ -3,6 +3,11 @@
 #include "Widgets/CheckBox.hpp"
 #include "Widgets/Label.hpp"
 #include "GUI_App.hpp"
+#include "GUI.hpp"
+#include "DeviceManager.hpp"
+#include "DeviceCore/DevConfigUtil.h"
+#include "slic3r/Utils/NetworkAgent.hpp"
+#include "libslic3r/Thread.hpp"
 #include "libslic3r/AppConfig.hpp"
 #include "I18N.hpp"
 #include "MsgDialog.hpp"
@@ -15,6 +20,7 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/log/trivial.hpp>
 #include <boost/nowide/cstdio.hpp>
+#include <boost/nowide/fstream.hpp>
 #include <boost/nowide/utf8_codecvt.hpp>
 #undef pid_t
 #include <boost/process.hpp>
@@ -91,6 +97,7 @@ MediaPlayCtrl::MediaPlayCtrl(wxWindow *parent, BBLMediaCtrl *media_ctrl, const w
     SetLabel("MediaPlayCtrl");
     SetBackgroundColour(*wxWHITE);
     m_media_ctrl->Bind(wxEVT_MEDIA_STATECHANGED, &MediaPlayCtrl::onStateChanged, this);
+    m_media_ctrl->SetIdleImage(from_u8(resources_dir() + "/images/live_stream_default.png"));
 
     m_button_play = new Button(this, "", "media_play", wxBORDER_NONE);
     m_button_play->SetCanFocus(false);
@@ -115,7 +122,7 @@ MediaPlayCtrl::MediaPlayCtrl(wxWindow *parent, BBLMediaCtrl *media_ctrl, const w
                 auto ip = str.find(' ', ik);
                 if (ip == wxString::npos) ip = str.Length();
                 auto v = str.Mid(ik, ip - ik);
-                if (k == "T:" && v.Length() == 8) {
+                if (strcmp(k, "T:") == 0 && v.Length() == 8) {
                     long h = 0,m = 0,s = 0;
                     v.Left(2).ToLong(&h);
                     v.Mid(3, 2).ToLong(&m);
@@ -222,13 +229,6 @@ void MediaPlayCtrl::SetMachineObject(MachineObject* obj)
     if (machine == m_machine) {
         if (m_last_state == MEDIASTATE_IDLE && IsEnabled())
             Play();
-        else if (m_last_state == MEDIASTATE_LOADING && m_tutk_state == "disable"
-                && m_last_user_play + wxTimeSpan::Seconds(3) < wxDateTime::Now()) {
-            // resend ttcode to printer
-            if (auto agent = wxGetApp().getAgent())
-                agent->get_camera_url(machine, [](auto) {}, wxGetApp().get_printer_cloud_provider());
-            m_last_user_play = wxDateTime::Now();
-        }
         return;
     }
     m_machine = machine;
@@ -358,7 +358,7 @@ void MediaPlayCtrl::Play()
     // !m_lan_mode && !m_remote_proto && m_lan_proto == LVL_None (x)
 
     if (m_lan_proto <= MachineObject::LVL_Disable && (m_lan_mode || !m_remote_proto)) {
-        Stop(m_lan_proto == MachineObject::LVL_None 
+        Stop(m_lan_proto == MachineObject::LVL_None
             ? _L("A problem occurred. Please update the printer firmware and try again.")
             : _L("LAN Only Liveview is off. Please turn on the liveview on printer screen."));
         return;
@@ -470,7 +470,7 @@ void MediaPlayCtrl::Stop(wxString const &msg, wxString const &msg2)
     auto tunnel = m_url.empty() ? "" : into_u8(wxURI(m_url).GetPath()).substr(1);
     if (auto n = tunnel.find_first_of("/_"); n != std::string::npos)
         tunnel = tunnel.substr(0, n);
-    if (last_state != wxMEDIASTATE_PLAYING && m_failed_code != 0 
+    if (last_state != wxMEDIASTATE_PLAYING && m_failed_code != 0
             && m_last_failed_codes.find(m_failed_code) == m_last_failed_codes.end()
             && (m_user_triggered || m_failed_retry > 3)) {
         m_last_failed_codes.insert(m_failed_code);
@@ -544,13 +544,13 @@ void MediaPlayCtrl::ToggleStream()
                     DownloadProgressDialog2(MediaPlayCtrl *ctrl) : DownloadProgressDialog(_L("Downloading Virtual Camera Tools")), ctrl(ctrl) {}
                     struct UpgradeNetworkJob2 : UpgradeNetworkJob
                     {
-                        UpgradeNetworkJob2(std::shared_ptr<ProgressIndicator> pri) : UpgradeNetworkJob() {
+                        UpgradeNetworkJob2() {
                             name         = "cameratools";
                             package_name = "camera_tools.zip";
                         }
                     };
-                    std::shared_ptr<UpgradeNetworkJob> make_job(std::shared_ptr<ProgressIndicator> pri)
-                    { return std::make_shared<UpgradeNetworkJob2>(pri); }
+                    std::unique_ptr<UpgradeNetworkJob> make_job() override
+                    { return std::make_unique<UpgradeNetworkJob2>(); }
                     void                               on_finish() override
                     {
                         ctrl->CallAfter([ctrl = this->ctrl] { ctrl->ToggleStream(); });
@@ -623,8 +623,8 @@ void MediaPlayCtrl::ToggleStream()
     }, wxGetApp().get_printer_cloud_provider());
 }
 
-void MediaPlayCtrl::msw_rescale() { 
-    m_button_play->Rescale(); 
+void MediaPlayCtrl::msw_rescale() {
+    m_button_play->Rescale();
 }
 
 void MediaPlayCtrl::jump_to_play()
@@ -797,7 +797,9 @@ void MediaPlayCtrl::media_proc()
             break;
         }
         else if (url == "<play>") {
+            BOOST_LOG_TRIVIAL(info) <<  "MediaPlayCtrl: start play";
             m_media_ctrl->Play();
+            BOOST_LOG_TRIVIAL(info) << "MediaPlayCtrl: end play";
         }
         else if (url == "<reload>") {
         }
@@ -865,15 +867,15 @@ bool MediaPlayCtrl::start_stream_service(bool *need_install)
             if (!boost::filesystem::exists(file_dll) || boost::filesystem::last_write_time(file_dll) != boost::filesystem::last_write_time(file_dll2))
                 boost::filesystem::copy_file(file_dll2, file_dll, boost::filesystem::copy_options::overwrite_existing);
         }
-        boost::process::child process_source(file_source, file_url2.ToStdWstring(), boost::process::start_dir(tools_dir), 
-                                             boost::process::windows::create_no_window, 
+        boost::process::child process_source(file_source, file_url2.ToStdWstring(), boost::process::start_dir(tools_dir),
+                                             boost::process::windows::create_no_window,
                                              boost::process::std_out > intermediate, boost::process::limit_handles);
-        boost::process::child process_ffmpeg(file_ffmpeg, configss, boost::process::windows::create_no_window, 
+        boost::process::child process_ffmpeg(file_ffmpeg, configss, boost::process::windows::create_no_window,
                                              boost::process::std_in < intermediate, boost::process::limit_handles);
 #else
         boost::filesystem::permissions(file_source, boost::filesystem::owner_exe | boost::filesystem::add_perms);
         boost::filesystem::permissions(file_ffmpeg, boost::filesystem::owner_exe | boost::filesystem::add_perms);
-        boost::process::child process_source(file_source, file_url2.data().AsInternal(), boost::process::start_dir(start_dir), 
+        boost::process::child process_source(file_source, file_url2.data().AsInternal(), boost::process::start_dir(start_dir),
                                              boost::process::std_out > intermediate, boost::process::limit_handles);
         boost::process::child process_ffmpeg(file_ffmpeg, configss, boost::process::std_in < intermediate, boost::process::limit_handles);
 #endif

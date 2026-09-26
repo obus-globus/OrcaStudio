@@ -1,7 +1,9 @@
 Build
 Build.bat
 /build*/
+/out/
 CMakeLists.txt.user
+CMakeUserPresets.json
 **/CMakeLists.txt.autosave
 deps/build*
 MYMETA.json
@@ -95,3 +97,5 @@ build.ninja
 *.app
 Thumbs.db
 .vscode/
+*.opc
+docs/superpowers/

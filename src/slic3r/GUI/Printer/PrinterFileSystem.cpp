@@ -663,10 +663,10 @@ PrinterFileSystem::File const &PrinterFileSystem::GetFile(size_t index, bool &se
 void PrinterFileSystem::Attached()
 {
     boost::unique_lock lock(m_mutex);
-    m_recv_thread = std::move(boost::thread([w = weak_from_this()] {
+    m_recv_thread = boost::thread([w = weak_from_this()] {
         boost::shared_ptr<PrinterFileSystem> s = w.lock();
         if (s) s->RecvMessageThread();
-    }));
+    });
 }
 
 void PrinterFileSystem::Start()
@@ -1233,7 +1233,7 @@ boost::uint32_t PrinterFileSystem::RequestMediaAbility(int api_version)
     req["api_version"] = api_version;
 
     return SendRequest<MediaAbilityList>(
-        REQUEST_MEDIA_ABILITY, req, [this](const json &resp, MediaAbilityList &list, auto) -> int {
+        REQUEST_MEDIA_ABILITY, req, [](const json &resp, MediaAbilityList &list, auto) -> int {
             json abliity_list = resp["storage"];
             list              = abliity_list.get<MediaAbilityList>();
             return 0;

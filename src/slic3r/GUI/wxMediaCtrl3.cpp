@@ -12,9 +12,7 @@
 #include <shellapi.h>
 #endif
 
-#if defined(__WXMAC__)
 wxDEFINE_EVENT(EVT_MEDIA_CTRL_STAT, wxCommandEvent);
-#endif
 
 BEGIN_EVENT_TABLE(wxMediaCtrl3, wxWindow)
 

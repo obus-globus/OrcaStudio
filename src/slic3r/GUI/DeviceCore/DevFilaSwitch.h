@@ -13,7 +13,7 @@ class DevFilaSwitch
 {
 public:
     enum class CaliStatus : int
-    {
+    {        
         CALI_IDLE = 0,
         CALI_STEPING = 1,
     };

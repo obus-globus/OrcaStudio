@@ -168,6 +168,8 @@ public:
     bool retry_last_print_request(const std::string& dev_id);
     FilamentSyncMode get_filament_sync_mode() const;
     bool fetch_filament_info(std::string dev_id);
+    std::string to_orca_filament_id(const std::string& printer_filament_id) const;
+    std::string from_orca_filament_id(const std::string& orca_filament_id) const;
     int request_bind_ticket(std::string* ticket);
     int get_hms_snapshot(std::string dev_id, std::string file_name, std::function<void(std::string, int)> callback);
 

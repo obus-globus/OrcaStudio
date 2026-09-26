@@ -2,7 +2,7 @@
 /* File: uiAMSBestPositionPopup.hpp
 *  Description: The popup with suggest best ams position
 *
-//**********************************************************/
+************************************************************/
 
 #pragma once
 #include "slic3r/GUI/Widgets/AMSItem.hpp"
@@ -91,13 +91,13 @@ private:
     wxColour m_borderColor;
     wxColour m_bgColor;
     bool m_isTop;
-
+ 
     wxBoxSizer* m_mainSizer{nullptr};
     wxBoxSizer* m_contentSizer{nullptr};
     wxBoxSizer* m_splitSizer{nullptr};
     wxSizer* m_leftSizer{nullptr};
     wxSizer* m_rightSizer{nullptr};
-
+    
     static constexpr int labelHeight = 30;
 
 };
@@ -167,7 +167,7 @@ public:
         const std::vector<DataAmsSlotInfo>& amsInfo,
         wxWindowID id,
         const wxPoint& pos,
-        const wxSize& minSize);
+        const wxSize& minSize);            
 private:
     void init();
     std::vector<DataAmsSlotInfo> m_amsInfo;
@@ -188,7 +188,7 @@ class ReselectMachineDialog : public wxDialog
 public:
     ReselectMachineDialog(wxWindow* parent);
     ~ReselectMachineDialog();
-    void Update(MachineObject* obj,
+    void UpdateInfo(MachineObject* obj,
                 const std::map<int, int>&  best_pos_map,
                 const std::vector<FilamentInfo>& ams_mapping,
                 wxString save_time);
@@ -199,7 +199,6 @@ private:
     void OnRefreshButton(wxCommandEvent& event);
 
 private:
-    int saveTimes{0};
     wxBoxSizer* mainSizer{nullptr};
     wxPanel* textPanel{nullptr};
     wxBoxSizer* textSizer{nullptr};
