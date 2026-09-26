@@ -160,7 +160,7 @@ set CMAKE_POLICY_VERSION_MINIMUM=3.5
 if "%USE_NINJA%"=="1" (
     cmake .. -G %CMAKE_GENERATOR% -DORCA_TOOLS=ON -DBBL_RELEASE_TO_PUBLIC=1 -DBBL_INTERNAL_TESTING=0 %SIG_FLAG% -DBUILD_TESTS=%BUILD_TESTS% -DCMAKE_BUILD_TYPE=%build_type%
     if errorlevel 1 exit /b 1
-    cmake --build . --config %build_type% --target ALL_BUILD
+    cmake --build . --config %build_type% --target all
     if errorlevel 1 exit /b 1
 ) else (
     cmake .. -G %CMAKE_GENERATOR% -A %arch% -DORCA_TOOLS=ON -DBBL_RELEASE_TO_PUBLIC=1 -DBBL_INTERNAL_TESTING=0 %SIG_FLAG% -DBUILD_TESTS=%BUILD_TESTS% -DCMAKE_BUILD_TYPE=%build_type%
