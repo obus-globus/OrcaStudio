@@ -1,7 +1,12 @@
 # Keeping this fork in sync
 
-This repo is jarczakpawel/OrcaStudio rebased onto real OrcaSlicer history, so both
-upstreams can be merged with normal git tooling.
+This is a GitHub fork of jarczakpawel/OrcaStudio whose `main` also carries real OrcaSlicer
+history, so both upstreams can be merged with normal git tooling.
+
+OrcaStudio's own history is squashed and unrelated to OrcaSlicer's. To fix that, OrcaStudio's
+changes were re-imported onto OrcaSlicer history (`ostudio-import`), OrcaSlicer main was merged
+in, and the result was joined to OrcaStudio's `main` with a merge commit whose tree is the
+OrcaSlicer-based one. `main` therefore has both histories as ancestors.
 
 ## Branch layout
 
@@ -17,7 +22,7 @@ all `resources/profiles` diffs). See the import commit message.
 
 ```sh
 git remote add upstream https://github.com/OrcaSlicer/OrcaSlicer.git
-git remote add ostudio  https://github.com/jarczakpawel/OrcaStudio.git
+git remote add ostudio  https://github.com/jarczakpawel/OrcaStudio.git   # the fork parent
 git config rerere.enabled true
 git config merge.conflictStyle zdiff3
 ```
@@ -33,20 +38,22 @@ git merge upstream/main
 Hot spots: `GUI_App.cpp`, `BBLNetworkPlugin.*`, `BBLPrinterAgent.*`, `bambu_networking.hpp`,
 `MediaPlayCtrl.*`, `DevManager.*`, `CMakeLists.txt` (FFmpeg staging), `deps/`.
 Move any new upstream workflow in `.github/workflows/` to `.github/workflows_disabled/`
-unless it is wanted here (scheduled/push workflows burn private Actions minutes).
+unless it is wanted here (scheduled/push workflows burn Actions minutes).
 
 ## Pulling new OrcaStudio changes
 
-OrcaStudio's history is unrelated to OrcaSlicer's, so cherry-pick its new commits:
+`main` already has OrcaStudio's `main` as an ancestor, so ordinary commits merge directly:
 
 ```sh
 git fetch ostudio
-git log --oneline 596413d0..ostudio/main      # last imported: 596413d0
-git checkout ostudio-import && git cherry-pick <commits>
-git checkout main && git merge ostudio-import
+git checkout main
+git merge ostudio/main
 ```
 
-If OrcaStudio rebases onto a newer OrcaSlicer again (a huge "update" commit), don't cherry-pick
+Their commits touch OrcaStudio-owned code, so conflicts should be rare. Stale OrcaSlicer files
+they still carry are not a problem: git sees them as unchanged on their side.
+
+If OrcaStudio rebases onto a newer OrcaSlicer again (a huge "update" commit), don't merge
 that commit. Diff its tree against the OrcaSlicer commit it claims and take only real changes,
 the same way the original import did.
 
