@@ -38,7 +38,15 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y dbus-x11 epiphany-browser libasound2t64 libgtk-3-dev libpulse0 libwebkit2gtk-4.1-dev novnc openbox openssl websockify x11vnc xvfb
 
+      - name: Cache Linux deps
+        id: linux_deps_cache
+        uses: actions/cache/restore@v5
+        with:
+          path: deps/build/OrcaSlicer_dep
+          key: linux-deps-x64-clang-${{ hashFiles('deps/**', 'build_linux.sh', 'scripts/linux.d/**') }}
+
       - name: Build Linux deps
+        if: steps.linux_deps_cache.outputs.cache-hit != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -53,6 +61,13 @@ jobs:
             fi
           done
           exit 1
+
+      - name: Save Linux deps cache
+        if: steps.linux_deps_cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: deps/build/OrcaSlicer_dep
+          key: ${{ steps.linux_deps_cache.outputs.cache-primary-key }}
 
       - name: Configure Slicer Linux runtime host build
         shell: bash
@@ -204,13 +219,29 @@ jobs:
           Add-Content -Path $env:GITHUB_PATH -Value $nsisBin
           & $makensis /VERSION
 
+      - name: Cache Windows deps
+        id: deps_cache
+        uses: actions/cache/restore@v5
+        with:
+          path: ${{ github.workspace }}/deps/build/OrcaSlicer_dep
+          key: win-deps-x64-${{ hashFiles('deps/**') }}
+
       - name: Build Windows deps
+        if: steps.deps_cache.outputs.cache-hit != 'true'
         working-directory: ${{ github.workspace }}
         env:
           WindowsSdkDir: 'C:\Program Files (x86)\Windows Kits\10\'
           WindowsSDKVersion: '10.0.26100.0\'
         shell: pwsh
         run: .\build_release_vs.bat deps
+
+      # Saved right away, so a later failure (e.g. packaging) doesn't cost the deps build next time.
+      - name: Save Windows deps cache
+        if: steps.deps_cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: ${{ github.workspace }}/deps/build/OrcaSlicer_dep
+          key: ${{ steps.deps_cache.outputs.cache-primary-key }}
 
       - name: Build slicer Win
         working-directory: ${{ github.workspace }}
@@ -219,6 +250,13 @@ jobs:
           WindowsSDKVersion: '10.0.26100.0\'
         shell: pwsh
         run: .\build_release_vs.bat slicer
+
+      - name: Build system preset cache
+        shell: cmd
+        # Same packaging step as upstream OrcaSlicer: compile the ~14k preset JSONs into one
+        # <vendor>.opc per vendor, both in the installed tree (portable zip) and in the
+        # checkout cpack re-installs from (NSIS installer).
+        run: scripts\build_preset_cache.bat --prune-source build "resources\profiles" "build\OrcaStudio\resources\profiles"
 
 
       - name: Normalize Windows runtime shell scripts
@@ -247,47 +285,6 @@ jobs:
         shell: pwsh
         run: |
           & "$env:GITHUB_WORKSPACE\build\OrcaStudio\verify_runtime.ps1" -PackageDir "$env:GITHUB_WORKSPACE\build\OrcaStudio" -PackageOnly
-
-      - name: Create installer Win
-        working-directory: ${{ github.workspace }}/build
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = "Stop"
-          cpack -G NSIS
-          if ($LASTEXITCODE -ne 0) {
-            throw "CPack NSIS failed with exit code $LASTEXITCODE"
-          }
-          $installers = @(Get-ChildItem -LiteralPath . -Filter "OrcaStudio*.exe" -File)
-          if ($installers.Count -eq 0) {
-            throw "CPack did not create an OrcaStudio installer"
-          }
-          $installers | ForEach-Object {
-            Write-Host ("Installer: {0} ({1:N0} bytes)" -f $_.FullName, $_.Length)
-          }
-
-      - name: Normalize installer release filename
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = "Stop"
-          $installers = @(Get-ChildItem -LiteralPath "$env:GITHUB_WORKSPACE\build" -Filter "OrcaStudio*.exe" -File)
-          if ($installers.Count -ne 1) {
-            throw "Expected exactly one OrcaStudio installer, found $($installers.Count)"
-          }
-          $target = Join-Path "$env:GITHUB_WORKSPACE\build" "OrcaStudio_Windows_Installer_${{ env.ver }}.exe"
-          if ($installers[0].FullName -ne $target) {
-            Move-Item -LiteralPath $installers[0].FullName -Destination $target -Force
-          }
-          if (!(Test-Path -LiteralPath $target)) {
-            throw "Normalized installer was not created: $target"
-          }
-
-      - name: Upload artifacts Win installer
-        uses: actions/upload-artifact@v7
-        with:
-          name: OrcaStudio_Windows_${{ env.ver }}_installer
-          path: ${{ github.workspace }}/build/OrcaStudio*.exe
-          if-no-files-found: error
-          compression-level: 0
 
       - name: Pack and verify portable app
         working-directory: ${{ github.workspace }}/build
@@ -333,3 +330,52 @@ jobs:
           if-no-files-found: error
           compression-level: 0
 
+      - name: Report runner resources
+        shell: pwsh
+        run: |
+          Get-PSDrive -PSProvider FileSystem | Format-Table Name,Used,Free
+          Get-CimInstance Win32_OperatingSystem | Format-List FreePhysicalMemory,TotalVisibleMemorySize
+          $d = "$env:GITHUB_WORKSPACE\build\OrcaStudio"
+          $f = Get-ChildItem -LiteralPath $d -Recurse -Force -File
+          Write-Host ("Install tree: {0:N0} files, {1:N0} bytes" -f $f.Count, ($f | Measure-Object Length -Sum).Sum)
+
+      - name: Create installer Win
+        working-directory: ${{ github.workspace }}/build
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          cpack -G NSIS
+          if ($LASTEXITCODE -ne 0) {
+            throw "CPack NSIS failed with exit code $LASTEXITCODE"
+          }
+          $installers = @(Get-ChildItem -LiteralPath . -Filter "OrcaStudio*.exe" -File)
+          if ($installers.Count -eq 0) {
+            throw "CPack did not create an OrcaStudio installer"
+          }
+          $installers | ForEach-Object {
+            Write-Host ("Installer: {0} ({1:N0} bytes)" -f $_.FullName, $_.Length)
+          }
+
+      - name: Normalize installer release filename
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $installers = @(Get-ChildItem -LiteralPath "$env:GITHUB_WORKSPACE\build" -Filter "OrcaStudio*.exe" -File)
+          if ($installers.Count -ne 1) {
+            throw "Expected exactly one OrcaStudio installer, found $($installers.Count)"
+          }
+          $target = Join-Path "$env:GITHUB_WORKSPACE\build" "OrcaStudio_Windows_Installer_${{ env.ver }}.exe"
+          if ($installers[0].FullName -ne $target) {
+            Move-Item -LiteralPath $installers[0].FullName -Destination $target -Force
+          }
+          if (!(Test-Path -LiteralPath $target)) {
+            throw "Normalized installer was not created: $target"
+          }
+
+      - name: Upload artifacts Win installer
+        uses: actions/upload-artifact@v7
+        with:
+          name: OrcaStudio_Windows_${{ env.ver }}_installer
+          path: ${{ github.workspace }}/build/OrcaStudio*.exe
+          if-no-files-found: error
+          compression-level: 0
