@@ -869,6 +869,11 @@ PlaterPresetComboBox::PlaterPresetComboBox(wxWindow *parent, Preset::Type preset
         RemoveButtonBorder(clr_picker);
 #endif
         clr_picker->Bind(wxEVT_BUTTON, [this](wxCommandEvent& e) {
+            if (m_filament_idx < 0 || m_filament_idx >= static_cast<int>(m_preset_bundle->filament_presets.size())) {
+                BOOST_LOG_TRIVIAL(warning) << __FUNCTION__ << boost::format(": m_filament_idx %1% out of range %2%") % m_filament_idx % m_preset_bundle->filament_presets.size();
+                return;
+            }
+
             // Check if it's an official filament
             auto fila_type = Preset::remove_suffix_modified(GetValue().ToUTF8().data());
             bool is_official = boost::algorithm::starts_with(fila_type, "Bambu");
@@ -1577,8 +1582,12 @@ FilamentColor PlaterPresetComboBox::get_cur_color_info()
 void PlaterPresetComboBox::show_default_color_picker()
 {
     DynamicPrintConfig* cfg = &wxGetApp().preset_bundle->project_config;
-    auto colors = static_cast<ConfigOptionStrings*>(cfg->option("filament_colour")->clone());
-    wxColour current_clr(colors->values[m_filament_idx]);
+    auto *color_option = cfg->option<ConfigOptionStrings>("filament_colour");
+    if (!color_option || m_filament_idx < 0 || m_filament_idx >= static_cast<int>(color_option->values.size())) {
+        BOOST_LOG_TRIVIAL(warning) << __FUNCTION__ << boost::format(": m_filament_idx %1% out of range %2%") % m_filament_idx % (color_option ? color_option->values.size() : 0);
+        return;
+    }
+    wxColour current_clr(color_option->values[m_filament_idx]);
     if (!current_clr.IsOk())
         current_clr = wxColour(0, 0, 0); // Don't set alfa to transparence
 
