@@ -1,6 +1,7 @@
 #ifndef slic3r_PresetCacheFormat_hpp_
 #define slic3r_PresetCacheFormat_hpp_
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <unordered_map>
@@ -14,6 +15,9 @@
 #include "libslic3r/Preset.hpp"
 #include "libslic3r/PrintConfig.hpp"
 #include "libslic3r/Semver.hpp"
+
+namespace cereal { class BinaryInputArchive; }
+namespace cereal { class BinaryOutputArchive; }
 
 namespace Slic3r {
 
@@ -109,7 +113,7 @@ void skip_config(cereal::BinaryInputArchive& ar, const CacheDictionary& dict);
 
 // One preset as its JSON subfile states it: the config diff, the names of the
 // preset it inherits and the presets it includes, and the parse metadata —
-// everything the parse phase of load_vendor_configs_from_json extracts and
+// everything PresetBundle::parse_vendor_json extracts and
 // nothing it derives. Inheritance and includes are resolved when the entry is
 // installed, against whatever filament library is loaded then, so a cache
 // carries no other vendor's values and no other vendor's update can make it
@@ -165,6 +169,11 @@ public:
     static bool load(const std::string& path, const std::string& expected_vendor_name,
                      const Semver& expected_vendor_version, VendorCacheData& data);
 
+    // Read only the vendor's own profile, under the same checks as load(),
+    // without deserializing its presets.
+    static bool load_vendor_profile(const std::string& path, const std::string& expected_vendor_name,
+                                    const Semver& expected_vendor_version, VendorProfile& vendor);
+
     // Read the profile version a cache was stamped with, without deserializing
     // its presets. Empty if the file is unreadable, not a cache this build
     // understands, or not this vendor's. This is how an installed vendor's
@@ -184,9 +193,10 @@ public:
     // read. The three kinds are written in one stream, so reaching the machines
     // means reading past the processes and filaments — their configs are consumed
     // and dropped rather than built. This is how a build that ships caches instead
-    // of preset JSONs answers "which vendor carries this preset?".
+    // of preset JSONs answers "which vendor carries this preset?". With `renamed`
+    // it answers whether a preset was renamed from `preset_name` instead.
     static bool carries_preset(const std::string& path, const std::string& vendor_name,
-                               Preset::Type type, const std::string& preset_name);
+                               Preset::Type type, const std::string& preset_name, bool renamed = false);
 };
 
 } // namespace Slic3r

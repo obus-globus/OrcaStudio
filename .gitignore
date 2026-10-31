@@ -98,4 +98,6 @@ build.ninja
 Thumbs.db
 .vscode/
 *.opc
+/.test/
 docs/superpowers/
+ctest_results.xml

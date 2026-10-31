@@ -79,7 +79,6 @@ bundle_dependency_closure() {
 
     local -a queue=("$@")
     local target dep dep_real dep_key copied_path
-    local queue_index=0
     declare -A seen=()
     # Dependencies are resolved with ldd, which only searches the default
     # loader path. Deps-built shared libraries (e.g. the FFmpeg stack) are not
@@ -92,9 +91,13 @@ bundle_dependency_closure() {
     # (scripts/check_appimage_libs.sh).
     local -a search_dirs=("$dst_dir")
 
-    while [ "$queue_index" -lt "${#queue[@]}" ]; do
-        target="${queue[$queue_index]}"
-        queue_index=$((queue_index + 1))
+    # Walked with a read index rather than by reslicing the array: "${queue[@]:1}" rebuilds the whole
+    # queue on every pop, so draining it costs O(n^2). At the ~5k entries this bundle reaches that was
+    # ~22 s of the image build spent copying an array around.
+    local head=0
+    while [ "$head" -lt ${#queue[@]} ]; do
+        target="${queue[$head]}"
+        head=$((head + 1))
 
         if [ ! -e "$target" ] || ! appimage_is_elf_file "$target"; then
             continue
@@ -208,11 +211,13 @@ PRIVATE_LIB_DIR="\$APPDIR/lib/orca-runtime"
 export LD_LIBRARY_PATH="\$PRIVATE_LIB_DIR:\$APPDIR/lib:\$APPDIR/bin\${LD_LIBRARY_PATH:+:\$LD_LIBRARY_PATH}"
 
 has_host_runtime_library() {
-    local lib_name path
-    lib_name="\$1"
+    local lib_name="\$1"
+    local path
 
-    if command -v ldconfig >/dev/null 2>&1 && ldconfig -p 2>/dev/null | grep -Fq " \$lib_name"; then
-        return 0
+    if command -v ldconfig >/dev/null 2>&1; then
+        if ldconfig -p 2>/dev/null | grep -Fq "\$lib_name ("; then
+            return 0
+        fi
     fi
 
     for path in /lib /lib64 /usr/lib /usr/lib64 /usr/lib/* /usr/lib64/* /lib/* /lib64/*; do
@@ -295,7 +300,8 @@ if [ "\$XDG_SESSION_TYPE" = "wayland" ] && [ "\$ZINK_DISABLE_OVERRIDE" != "1" ];
                 export __EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/50_mesa.json
                 export MESA_LOADER_DRIVER_OVERRIDE=zink
                 export GALLIUM_DRIVER=zink
-                export WEBKIT_DISABLE_DMABUF_RENDERER=1
+                # WebKit's NVIDIA DMABUF workaround is applied by the binary itself,
+                # gated on the runtime WebKitGTK version (src/OrcaSlicer.cpp).
             fi
         fi
     fi

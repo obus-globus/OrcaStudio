@@ -3,9 +3,14 @@
 
 #include "I18N.hpp"
 
+#include "slic3r/GUI/GUI_Utils.hpp"
+#include <wx/event.h>
 #include <wx/font.h>
 #include <wx/colour.h>
+#include <wx/gdicmn.h>
+#include <wx/panel.h>
 #include <wx/settings.h>
+#include <wx/setup.h>
 #include <wx/string.h>
 #include <wx/sizer.h>
 #include <wx/stattext.h>
@@ -17,6 +22,7 @@
 #include <wx/dialog.h>
 #include <wx/timer.h>
 #include <nlohmann/json.hpp>
+#include <wx/webview.h>
 
 #if wxUSE_WEBVIEW_IE
 #include "wx/msw/webview_ie.h"

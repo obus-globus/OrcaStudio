@@ -12,6 +12,7 @@
 #include "wx/window.h"
 #include "wx/uri.h"
 #include "wx/mediactrl.h"
+#include "IMediaController.hpp"
 #include "wx/timer.h"
 #include <wx/bitmap.h>
 #include "../Utils/FrameBuffer.hpp"
@@ -39,32 +40,42 @@ typedef wxImage PlayFrame;
 
 class AVVideoDecoder;
 
-class wxMediaCtrl3 : public wxWindow, BambuLib
+class wxMediaCtrl3 : public wxWindow, public Slic3r::GUI::IMediaController, BambuLib
 {
 public:
     wxMediaCtrl3(wxWindow *parent);
 
-    ~wxMediaCtrl3();
+    ~wxMediaCtrl3() override;
 
-    void Load(wxURI url, std::chrono::system_clock::time_point play_start_time = {});
+    void Load(wxURI url) override;
+    void Load(wxURI url, std::chrono::system_clock::time_point play_start_time);
 #if defined(__WXMAC__) || defined(__APPLE__)
     void LoadRaw(wxString const &url, std::chrono::system_clock::time_point play_start_time = {});
 #endif
 
     std::chrono::system_clock::time_point m_play_start_time;
 
-    void Play();
+    void Play() override;
 
-    void Stop();
+    void Stop() override;
+
+    // Render frames supplied by a controller which owns its own transport
+    // (e.g. WebRTC). The frame is copied; callers may release it afterwards.
+    void SetExternalFrame(const wxImage& frame, wxSize videoSize);
+#ifdef _WIN32
+    void SetExternalFrame(const wxBitmap& frame, wxSize videoSize);
+#endif
+    void BeginExternalStream();
+    void EndExternalStream();
 
     void SetIdleImage(wxString const & image, wxString const & watermark_text = {});
     void SetIdleImage(const wxImage &image, wxString const & watermark_text = {});
 
-    wxMediaState GetState();
+    wxMediaState GetState() override;
 
-    int GetLastError();
+    int GetLastError() const override;
 
-    wxSize GetVideoSize();
+    wxSize GetVideoSize() const override;
 
     void SetConstrainByAspectRatio(bool constrain) { m_constrain_by_aspect_ratio = constrain; }
     bool GetConstrainByAspectRatio() const { return m_constrain_by_aspect_ratio; }
@@ -81,6 +92,12 @@ protected:
     static void bambu_log(void *ctx, int level, tchar const *msg);
 
     void PlayThread();
+
+#if !defined(__WXMAC__) && !defined(__APPLE__)
+    // Generic http(s) MJPEG / rtsp(s) cameras of non-Bambu printer agents.
+    static int ffmpeg_interrupt_callback(void *opaque);
+    int PlayFfmpeg(std::shared_ptr<wxURI> const &url, std::unique_lock<std::mutex> &lock);
+#endif
 
     void NotifyStopped();
 
@@ -104,8 +121,11 @@ private:
     std::shared_ptr<MediaUrl> m_url;
 #else
     std::shared_ptr<wxURI> m_url;
+    std::shared_ptr<wxURI> m_active_url;
 #endif
-    std::mutex m_mutex;
+    bool m_external = false;
+    std::atomic_bool m_refresh_pending{false};
+    mutable std::mutex m_mutex;
     std::mutex m_ui_mutex;
     std::condition_variable m_cond;
     std::thread m_thread;

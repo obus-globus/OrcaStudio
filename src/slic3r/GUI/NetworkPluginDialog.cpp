@@ -10,9 +10,20 @@
 #include "slic3r/Utils/bambu_networking.hpp"
 #include "libslic3r_version.h"
 
+#include <string>
+#include "slic3r/GUI/GUI_Utils.hpp"
+#include <wx/event.h>
+#include <wx/gdicmn.h>
+#include <wx/dialog.h>
+#include <wx/panel.h>
+#include "slic3r/GUI/Widgets/Button.hpp"
+#include "slic3r/GUI/Widgets/CheckBox.hpp"
+#include "slic3r/GUI/Widgets/ComboBox.hpp"
 #include <wx/sizer.h>
 #include <wx/stattext.h>
 #include <wx/collpane.h>
+#include <wx/string.h>
+#include <wx/tglbtn.h>
 
 #define BORDER_W     FromDIP(20)
 #define TEXT_WRAP    FromDIP(400)
@@ -118,7 +129,7 @@ void NetworkPluginDownloadDialog::create_missing_plugin_ui()
     main_sizer->AddSpacer(15);
 
     auto dlg_btns = new DialogButtons(this,
-        {"Download and Install", "Skip for Now"},
+        {L("Download and Install"), L("Skip for Now")},
         _L("Download and Install")  // Primary button
     );
 
@@ -180,7 +191,7 @@ void NetworkPluginDownloadDialog::create_update_available_ui(const std::string& 
     main_sizer->AddSpacer(10);
 
     auto dlg_btns = new DialogButtons(this,
-        {"Update Now", "Remind Later", "Skip Version"},
+        {L("Update Now"), L("Remind Later"), L("Skip Version")},
         _L("Update Now")
     );
 
@@ -309,7 +320,7 @@ NetworkPluginRestartDialog::NetworkPluginRestartDialog(wxWindow* parent)
     main_sizer->AddSpacer(15);
 
     auto dlg_btns = new DialogButtons(this,
-        {"Restart Now", "Restart Later"},
+        {L("Restart Now"), L("Restart Later")},
         _L("Restart Now") // Primary button
     );
 

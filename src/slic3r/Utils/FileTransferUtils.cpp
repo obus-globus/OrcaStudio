@@ -1,3 +1,10 @@
+#include <string>
+#include <stdexcept>
+#include <utility>
+#include <vector>
+#include <cstddef>
+#include <cstdint>
+#include <type_traits>
 #include "FileTransferUtils.hpp"
 
 namespace Slic3r {

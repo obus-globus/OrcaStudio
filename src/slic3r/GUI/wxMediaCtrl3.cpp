@@ -6,6 +6,13 @@
 #include <boost/log/trivial.hpp>
 #include <wx/dcclient.h>
 #include <wx/dcgraph.h>
+#include <cstdarg>
+#include <cstdlib>
+#include <cstring>
+extern "C" {
+#include <libavformat/avformat.h>
+#include <libavutil/log.h>
+}
 #ifdef __WIN32__
 #include <versionhelpers.h>
 #include <wx/msw/registry.h>
@@ -64,9 +71,16 @@ wxMediaCtrl3::~wxMediaCtrl3()
     StaticBambuLib::remove(this);
 }
 
+void wxMediaCtrl3::Load(wxURI url)
+{
+    Load(url, {});
+}
+
 void wxMediaCtrl3::Load(wxURI url, std::chrono::system_clock::time_point play_start_time)
 {
     std::unique_lock<std::mutex> lk(m_mutex);
+    if (m_external)
+        return;
     m_video_size = wxDefaultSize;
     m_error = 0;
     m_play_start_time = play_start_time;
@@ -101,6 +115,8 @@ void wxMediaCtrl3::LoadRaw(wxString const &url, std::chrono::system_clock::time_
 void wxMediaCtrl3::Play()
 {
     std::unique_lock<std::mutex> lk(m_mutex);
+    if (m_external)
+        return;
     if (m_state != wxMEDIASTATE_PLAYING) {
         m_state = wxMEDIASTATE_PLAYING;
         wxMediaEvent event(wxEVT_MEDIA_STATECHANGED);
@@ -121,6 +137,89 @@ void wxMediaCtrl3::Stop()
     NotifyStopped();
     m_cond.notify_all();
     CallAfter([this] { Refresh(); });
+}
+
+// adjust_frame_size is defined below with the paint code.
+static void adjust_frame_size(wxSize & frame, wxSize const & video, wxSize const & window);
+
+void wxMediaCtrl3::SetExternalFrame(const wxImage& frame, wxSize videoSize)
+{
+    if (!frame.IsOk())
+        return;
+    {
+        std::unique_lock<std::mutex> lk(m_mutex);
+        if (!m_external)
+            return;
+        m_video_size = videoSize.IsFullySpecified() ? videoSize : frame.GetSize();
+        adjust_frame_size(m_frame_size, m_video_size, GetSize());
+    }
+    {
+        std::unique_lock<std::mutex> lk(m_ui_mutex);
+#ifdef _WIN32
+        m_frame = wxBitmap(frame);
+#else
+        m_frame = frame;
+#endif
+    }
+    CallAfter([this] { Refresh(); });
+}
+
+#ifdef _WIN32
+void wxMediaCtrl3::SetExternalFrame(const wxBitmap& frame, wxSize videoSize)
+{
+    if (!frame.IsOk())
+        return;
+    {
+        std::unique_lock<std::mutex> lk(m_mutex);
+        if (!m_external)
+            return;
+        m_video_size = videoSize.IsFullySpecified() ? videoSize : frame.GetSize();
+        adjust_frame_size(m_frame_size, m_video_size, GetSize());
+    }
+    {
+        std::unique_lock<std::mutex> lk(m_ui_mutex);
+        m_frame = frame;
+    }
+    CallAfter([this] { Refresh(); });
+}
+#endif
+
+void wxMediaCtrl3::BeginExternalStream()
+{
+    {
+        std::unique_lock<std::mutex> lk(m_mutex);
+        m_external = true;
+        m_url.reset();
+#if !defined(__WXMAC__) && !defined(__APPLE__)
+        m_active_url.reset();
+#endif
+        m_video_size = wxDefaultSize;
+        m_cond.notify_all();
+    }
+    {
+        std::unique_lock<std::mutex> lk(m_ui_mutex);
+        m_frame = wxImage(m_idle_image);
+    }
+    Refresh();
+}
+
+void wxMediaCtrl3::EndExternalStream()
+{
+    {
+        std::unique_lock<std::mutex> lk(m_mutex);
+        m_external = false;
+        m_url.reset();
+#if !defined(__WXMAC__) && !defined(__APPLE__)
+        m_active_url.reset();
+#endif
+        m_video_size = wxDefaultSize;
+        m_cond.notify_all();
+    }
+    {
+        std::unique_lock<std::mutex> lk(m_ui_mutex);
+        m_frame = wxImage(m_idle_image);
+    }
+    Refresh();
 }
 
 void wxMediaCtrl3::SetIdleImage(wxString const &image, wxString const &watermark_text)
@@ -157,13 +256,13 @@ wxMediaState wxMediaCtrl3::GetState()
     return m_state;
 }
 
-int wxMediaCtrl3::GetLastError()
+int wxMediaCtrl3::GetLastError() const
 {
     std::unique_lock<std::mutex> lk(m_mutex);
     return m_error;
 }
 
-wxSize wxMediaCtrl3::GetVideoSize()
+wxSize wxMediaCtrl3::GetVideoSize() const
 {
     std::unique_lock<std::mutex> lk(m_mutex);
     return m_video_size;
@@ -313,6 +412,214 @@ static std::string wxmedia_bambu_last_error(BambuLib& lib)
     return out;
 }
 
+#if !defined(__WXMAC__) && !defined(__APPLE__)
+// FFmpeg's own diagnostics (HTTP status, "Invalid data found", demuxer choice,
+// missing stream dimensions, ...) are otherwise swallowed: a failed camera open
+// only surfaces as wxMediaCtrl3's generic error code, which MediaPlayCtrl maps to
+// the misleading "Player is malfunctioning" string. Forward them to the Orca log
+// instead. Verbosity defaults to AV_LOG_VERBOSE and can be raised at runtime with
+// ORCA_FFMPEG_LOG_LEVEL=debug|trace|... (or lowered to warning/error/quiet).
+static int ffmpeg_log_level_from_env()
+{
+    const char *env = std::getenv("ORCA_FFMPEG_LOG_LEVEL");
+    if (env == nullptr || *env == '\0')
+        return AV_LOG_VERBOSE;
+    const wxString v = wxString(env).Lower();
+    if (v == "quiet")   return AV_LOG_QUIET;
+    if (v == "panic")   return AV_LOG_PANIC;
+    if (v == "fatal")   return AV_LOG_FATAL;
+    if (v == "error")   return AV_LOG_ERROR;
+    if (v == "warning") return AV_LOG_WARNING;
+    if (v == "info")    return AV_LOG_INFO;
+    if (v == "verbose") return AV_LOG_VERBOSE;
+    if (v == "debug")   return AV_LOG_DEBUG;
+    if (v == "trace")   return AV_LOG_TRACE;
+    return AV_LOG_VERBOSE;
+}
+
+static void ffmpeg_log_callback(void *avcl, int level, const char *fmt, va_list vl)
+{
+    if (level > av_log_get_level())
+        return;
+    thread_local int print_prefix = 1;
+    char line[1024];
+    av_log_format_line2(avcl, level, fmt, vl, line, (int) sizeof(line), &print_prefix);
+    size_t len = std::strlen(line);
+    while (len > 0 && (line[len - 1] == '\n' || line[len - 1] == '\r' || line[len - 1] == ' '))
+        line[--len] = '\0';
+    if (len == 0)
+        return;
+    if (level <= AV_LOG_ERROR)
+        BOOST_LOG_TRIVIAL(error) << "ffmpeg: " << line;
+    else if (level <= AV_LOG_WARNING)
+        BOOST_LOG_TRIVIAL(warning) << "ffmpeg: " << line;
+    else if (level <= AV_LOG_INFO)
+        BOOST_LOG_TRIVIAL(info) << "ffmpeg: " << line;
+    else
+        BOOST_LOG_TRIVIAL(debug) << "ffmpeg: " << line;
+}
+
+static void install_ffmpeg_logger()
+{
+    av_log_set_level(ffmpeg_log_level_from_env());
+    av_log_set_callback(&ffmpeg_log_callback);
+}
+
+int wxMediaCtrl3::ffmpeg_interrupt_callback(void *opaque)
+{
+    auto *ctrl = static_cast<wxMediaCtrl3 *>(opaque);
+    std::lock_guard<std::mutex> lock(ctrl->m_mutex);
+    return ctrl->m_url != ctrl->m_active_url;
+}
+
+int wxMediaCtrl3::PlayFfmpeg(std::shared_ptr<wxURI> const &url, std::unique_lock<std::mutex> &lock)
+{
+    static std::once_flag logger_once;
+    std::call_once(logger_once, install_ffmpeg_logger);
+
+    if (avformat_network_init() < 0)
+        return 2;
+
+    AVFormatContext *format_context = avformat_alloc_context();
+    if (!format_context) {
+        avformat_network_deinit();
+        return 2;
+    }
+
+    format_context->interrupt_callback = {&wxMediaCtrl3::ffmpeg_interrupt_callback, this};
+    format_context->flags |= AVFMT_FLAG_NOBUFFER;
+    format_context->max_delay = 0;
+    m_active_url = url;
+
+    auto finish = [&](int error) {
+        lock.unlock();
+        avformat_close_input(&format_context);
+        avformat_network_deinit();
+        lock.lock();
+        m_active_url.reset();
+        return error;
+    };
+
+    const std::string uri = url->BuildURI().ToUTF8().data();
+    const wxString scheme = url->GetScheme();
+    const bool http_stream = scheme.CmpNoCase("http") == 0 || scheme.CmpNoCase("https") == 0;
+    AVDictionary *options = nullptr;
+    if (http_stream) {
+        // Live multipart MJPEG. fflags=nobuffer / AVFMT_FLAG_NOBUFFER / max_delay=0
+        // (set above) are the low-latency levers - they disable the demuxer
+        // read-ahead queue. probesize / analyzeduration only bound the one-off
+        // avformat_find_stream_info() at open; a 32-byte budget returned before a
+        // whole JPEG frame was seen, so width/height came back unset and the open
+        // was rejected. Give it room to identify one frame (a startup cost only).
+        // rw_timeout / timeout bound a wedged connect or read so a stale stream
+        // fails fast and is retried, instead of the reader thread hanging.
+        // avioflags=direct is deliberately NOT set: unbuffered reads make the
+        // mpjpeg demuxer emit "Packet corrupt" and bail on any short read across
+        // a multipart boundary.
+        av_dict_set(&options, "fflags", "nobuffer", 0);
+        av_dict_set(&options, "probesize", "5000000", 0);
+        av_dict_set(&options, "analyzeduration", "1000000", 0);
+        av_dict_set(&options, "rw_timeout", "5000000", 0);
+        av_dict_set(&options, "timeout", "5000000", 0);
+    } else {
+        av_dict_set(&options, "rtsp_transport", "tcp", 0);
+    }
+    lock.unlock();
+    int error = avformat_open_input(&format_context, uri.c_str(), nullptr, &options);
+    av_dict_free(&options);
+    lock.lock();
+    if (error < 0)
+        return finish(2);
+
+    lock.unlock();
+    error = avformat_find_stream_info(format_context, nullptr);
+    lock.lock();
+    if (error < 0)
+        return finish(2);
+
+    const int video_stream = av_find_best_stream(format_context, AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
+    if (video_stream < 0)
+        return finish(2);
+
+    AVVideoDecoder decoder;
+    if (decoder.open(*format_context->streams[video_stream]->codecpar) < 0)
+        return finish(2);
+
+    // Prefer the dimensions the container reported. A small probe budget, or a
+    // camera that doesn't announce a size up front, can leave these unset - in
+    // that case fill them in from the first frame that decodes (below) rather
+    // than failing the open outright.
+    auto apply_video_size = [&](wxSize size) {
+        if (!size.IsFullySpecified() || size.x <= 0 || size.y <= 0)
+            return false;
+        m_video_size = size;
+        adjust_frame_size(m_frame_size, m_video_size, GetSize());
+        NotifyStopped();
+        return true;
+    };
+    bool have_size = apply_video_size({format_context->streams[video_stream]->codecpar->width,
+                                      format_context->streams[video_stream]->codecpar->height});
+    int size_probe_frames = 0; // frames spent still waiting for a usable size
+
+    AVPacket *packet = av_packet_alloc();
+    if (!packet)
+        return finish(2);
+
+    while (m_url == url) {
+        lock.unlock();
+        error = av_read_frame(format_context, packet);
+        lock.lock();
+        if (m_url != url)
+            break;
+        if (error < 0)
+            break;
+        if (packet->stream_index == video_stream) {
+            const int decode_error = decoder.decode(*packet);
+            if (decode_error == 0) {
+                if (!have_size) {
+                    have_size = apply_video_size(decoder.decoded_frame_size());
+                    if (!have_size) {
+                        av_packet_unref(packet);
+                        // MJPEG yields a sized frame on the first full packet; if
+                        // several seconds of frames never do, treat it as a bad
+                        // stream instead of sitting in "Loading..." forever.
+                        if (++size_probe_frames > 120)
+                            break;
+                        continue;
+                    }
+                }
+                auto frame_size = m_frame_size;
+                lock.unlock();
+#ifdef _WIN32
+                wxBitmap frame;
+                decoder.toWxBitmap(frame, frame_size);
+#else
+                wxImage frame;
+                decoder.toWxImage(frame, frame_size);
+#endif
+                lock.lock();
+                if (m_url != url)
+                    break;
+                if (frame.IsOk()) {
+                    std::unique_lock<std::mutex> ui_lock(m_ui_mutex);
+                    m_frame = frame;
+                }
+                if (!m_refresh_pending.exchange(true)) {
+                    CallAfter([this] {
+                        m_refresh_pending.store(false);
+                        Refresh();
+                    });
+                }
+            }
+        }
+        av_packet_unref(packet);
+    }
+
+    av_packet_free(&packet);
+    return finish(m_url == url ? 2 : 1);
+}
+#endif
+
 void wxMediaCtrl3::PlayThread()
 {
 #if !defined(_WIN32) && !defined(__WXMAC__) && !defined(__APPLE__)
@@ -332,6 +639,21 @@ void wxMediaCtrl3::PlayThread()
             continue;
         if (!url->HasScheme())
             break;
+
+        {
+            // Generic camera streams of non-Bambu printer agents go through FFmpeg directly.
+            const wxString scheme = url->GetScheme();
+            if (scheme.CmpNoCase("http") == 0 || scheme.CmpNoCase("https") == 0 ||
+                scheme.CmpNoCase("rtsp") == 0 || scheme.CmpNoCase("rtsps") == 0) {
+                const int ffmpeg_error = PlayFfmpeg(url, lk);
+                if (m_url == url)
+                    m_error = ffmpeg_error;
+                m_frame_size = wxDefaultSize;
+                m_video_size = wxDefaultSize;
+                NotifyStopped();
+                continue;
+            }
+        }
 
 
         //reset frame
@@ -508,6 +830,21 @@ void wxMediaCtrl3::PlayThread()
 #else
         if (!url->HasScheme())
             break;
+
+        {
+            // Generic camera streams of non-Bambu printer agents go through FFmpeg directly.
+            const wxString scheme = url->GetScheme();
+            if (scheme.CmpNoCase("http") == 0 || scheme.CmpNoCase("https") == 0 ||
+                scheme.CmpNoCase("rtsp") == 0 || scheme.CmpNoCase("rtsps") == 0) {
+                const int ffmpeg_error = PlayFfmpeg(url, lk);
+                if (m_url == url)
+                    m_error = ffmpeg_error;
+                m_frame_size = wxDefaultSize;
+                m_video_size = wxDefaultSize;
+                NotifyStopped();
+                continue;
+            }
+        }
 #endif
 
 

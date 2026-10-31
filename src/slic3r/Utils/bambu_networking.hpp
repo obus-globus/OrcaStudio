@@ -1,6 +1,7 @@
 #ifndef __BAMBU_NETWORKING_HPP__
 #define __BAMBU_NETWORKING_HPP__
 
+#include <cstddef>
 #include <string>
 #include <functional>
 #include <map>
@@ -352,6 +353,7 @@ struct PrintParams {
     bool            try_emmc_print;
     std::string     svc_context;
     std::string     slicer_uid;
+    std::string     queue_plate_id;
 };
 
 struct TaskQueryParams
@@ -428,7 +430,7 @@ enum class NetworkAbi {
     Unsupported, // no generation in this build can call it - never dispatch through it
     Legacy,      // 01.10.01: PrintParams_Legacy; send_message/send_message_to_printer take no flag
     V0203,       // 02.03.00: PrintParams_0203; bind takes no dev_model
-    Current,     // 02.08.01: the layouts and signatures this build declares directly
+    Current,     // 02.08.04: the layouts and signatures this build declares directly
 };
 
 struct NetworkLibraryVersion {
@@ -441,8 +443,10 @@ struct NetworkLibraryVersion {
 };
 
 // Every row names the generation that can call it, so a series can never be offered without a
-// host-side ABI for it. Series with no generation - 02.01.01, 02.00.02 and older - must stay out;
-// is_supported_network_version() is the gate that keeps them from loading.
+// host-side ABI for it. Series with no generation - 02.08.01 (whose PrintParams lacks the
+// queue_plate_id that 02.08.02 appended, and whose malformed bind table macOS 27 refuses to
+// load), 02.01.01, 02.00.02 and older - must stay out; is_supported_network_version() is the
+// gate that keeps them from loading.
 static const NetworkLibraryVersion AVAILABLE_NETWORK_VERSIONS[] = {
     {BAMBU_NETWORK_AGENT_VERSION, BAMBU_NETWORK_AGENT_VERSION, nullptr, true, nullptr, NetworkAbi::Current},
     {"02.03.00", "02.03.00", nullptr, false,
