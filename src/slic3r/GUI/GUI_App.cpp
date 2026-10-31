@@ -4726,6 +4726,8 @@ bool GUI_App::on_init_network(bool try_backup)
                 m_user_manager = new Slic3r::UserManager();
             else
                 m_user_manager->set_agent(nullptr);
+            if (m_task_manager)
+                m_task_manager->set_agent(nullptr);
             return true;
         }
     }
@@ -4883,6 +4885,8 @@ bool GUI_App::on_init_network(bool try_backup)
             m_user_manager = new Slic3r::UserManager();
         else
             m_user_manager->set_agent(nullptr);
+        if (m_task_manager)
+            m_task_manager->set_agent(nullptr);
     }
 
     // A version pinned to something other than the latest series is a deliberate choice, so it
@@ -4991,9 +4995,6 @@ void GUI_App::switch_printer_agent()
 
     const PrinterAgentInfo agent_info = *agent_info_ptr;
     const std::string cloud_agent_id = agent_info.id == BBL_PRINTER_AGENT_ID ? BBL_CLOUD_PROVIDER : ORCA_CLOUD_PROVIDER;
-
-    std::string log_dir        = data_dir();
-    std::string cloud_agent_id = agent_info.id == BBL_PRINTER_AGENT_ID ? BBL_CLOUD_PROVIDER : ORCA_CLOUD_PROVIDER;
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " " << agent_info.id;
     std::shared_ptr<ICloudServiceAgent> cloud_agent = m_agent->get_cloud_agent(cloud_agent_id);
     std::shared_ptr<IPrinterAgent> new_printer_agent =
@@ -5087,7 +5088,6 @@ void GUI_App::select_machine(const std::string& agent_id)
     if (access_code.empty() && agent_id != MOONRAKER_PRINTER_AGENT_ID)
         access_code = "88888888";
 
-    std::string port = host_cfg->opt_string("printhost_port");
     std::string dev_id = MachineObject::dev_id_from_address(print_host, port);
 
     MachineObject* existing = m_device_manager->get_local_machine(dev_id);
@@ -6060,19 +6060,22 @@ void GUI_App::request_user_logout(const std::string& provider/* = ORCA_CLOUD_PRO
 
                 remove_user_presets();
                 enable_user_preset_folder(false);
-                if (provider == ORCA_CLOUD_PROVIDER) {
-                    // A startup fetch still in flight would re-add this user's cloud metadata.
-                    if (m_startup_cloud_plugin_fetch_thread.joinable())
-                        m_startup_cloud_plugin_fetch_thread.join();
-                    Slic3r::PluginManager::instance().unload_cloud_plugins();
-                    Slic3r::PluginManager::instance().clear_cloud_plugin_metadata();
-                    Slic3r::PluginManager::instance().set_cloud_user("");
-                }
                 preset_bundle->load_user_presets(DEFAULT_USER_FOLDER_NAME, ForwardCompatibilitySubstitutionRule::Enable);
                 mainframe->update_side_preset_ui();
+                stop_sync_user_preset();
+            }
+            // The OrcaCloud plugins belong to the signed-out OrcaCloud user, whichever account's
+            // presets are loaded.
+            if (provider == ORCA_CLOUD_PROVIDER) {
+                // A startup fetch still in flight would re-add this user's cloud metadata.
+                if (m_startup_cloud_plugin_fetch_thread.joinable())
+                    m_startup_cloud_plugin_fetch_thread.join();
+                Slic3r::PluginManager::instance().unload_cloud_plugins();
+                Slic3r::PluginManager::instance().clear_cloud_plugin_metadata();
+                Slic3r::PluginManager::instance().set_cloud_user("");
+                // keep this here. refresh_from_catalog is meant to update the dialog UI.
                 if (m_plugins_dlg)
                     m_plugins_dlg->update_plugin_dialog_ui();
-                stop_sync_user_preset();
             }
         }
 
@@ -7870,11 +7873,11 @@ void GUI_App::sync_preset(Preset* preset, bool force, const std::string& provide
 
         BOOST_LOG_TRIVIAL(trace) << "sync_preset: sync operation: " << preset->sync_info << " success! preset = " << preset->name;
         if (preset->type == Preset::Type::TYPE_FILAMENT) {
-            preset_bundle->filaments.set_sync_info_and_save(preset->name, setting_id, updated_info, update_time, m_agent->get_user_id());
+            preset_bundle->filaments.set_sync_info_and_save(preset->name, setting_id, updated_info, update_time, m_agent->get_user_id(active_provider));
         } else if (preset->type == Preset::Type::TYPE_PRINT) {
-            preset_bundle->prints.set_sync_info_and_save(preset->name, setting_id, updated_info, update_time, m_agent->get_user_id());
+            preset_bundle->prints.set_sync_info_and_save(preset->name, setting_id, updated_info, update_time, m_agent->get_user_id(active_provider));
         } else if (preset->type == Preset::Type::TYPE_PRINTER) {
-            preset_bundle->printers.set_sync_info_and_save(preset->name, setting_id, updated_info, update_time, m_agent->get_user_id());
+            preset_bundle->printers.set_sync_info_and_save(preset->name, setting_id, updated_info, update_time, m_agent->get_user_id(active_provider));
         }
     }
 }

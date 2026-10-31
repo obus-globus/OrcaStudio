@@ -128,12 +128,14 @@ void wxMediaCtrl3::Play()
 
 void wxMediaCtrl3::Stop()
 {
-    {
-        std::unique_lock<std::mutex> lk(m_ui_mutex);
-        m_frame = wxImage(m_idle_image);
-    }
+    // Reset the url before the idle frame: a stream thread re-checks m_url under m_mutex before
+    // publishing a frame, so none can land after the idle image (lock order m_mutex -> m_ui_mutex).
     std::unique_lock<std::mutex> lk(m_mutex);
     m_url.reset();
+    {
+        std::unique_lock<std::mutex> ui_lk(m_ui_mutex);
+        m_frame = wxImage(m_idle_image);
+    }
     NotifyStopped();
     m_cond.notify_all();
     CallAfter([this] { Refresh(); });
@@ -152,9 +154,8 @@ void wxMediaCtrl3::SetExternalFrame(const wxImage& frame, wxSize videoSize)
             return;
         m_video_size = videoSize.IsFullySpecified() ? videoSize : frame.GetSize();
         adjust_frame_size(m_frame_size, m_video_size, GetSize());
-    }
-    {
-        std::unique_lock<std::mutex> lk(m_ui_mutex);
+        // Published while m_mutex is still held, so it cannot race EndExternalStream().
+        std::unique_lock<std::mutex> ui_lk(m_ui_mutex);
 #ifdef _WIN32
         m_frame = wxBitmap(frame);
 #else
@@ -175,9 +176,8 @@ void wxMediaCtrl3::SetExternalFrame(const wxBitmap& frame, wxSize videoSize)
             return;
         m_video_size = videoSize.IsFullySpecified() ? videoSize : frame.GetSize();
         adjust_frame_size(m_frame_size, m_video_size, GetSize());
-    }
-    {
-        std::unique_lock<std::mutex> lk(m_ui_mutex);
+        // Published while m_mutex is still held, so it cannot race EndExternalStream().
+        std::unique_lock<std::mutex> ui_lk(m_ui_mutex);
         m_frame = frame;
     }
     CallAfter([this] { Refresh(); });
@@ -663,7 +663,7 @@ void wxMediaCtrl3::PlayThread()
         lk.unlock();
         Bambu_Tunnel tunnel = nullptr;
         auto t0 = std::chrono::steady_clock::now();
-        int error = Bambu_Create(&tunnel, m_url->BuildURI().ToUTF8());
+        int error = Bambu_Create(&tunnel, url->BuildURI().ToUTF8());
         if (error == 0) {
             Bambu_SetLogger(tunnel, &wxMediaCtrl3::bambu_log, this);
             error = Bambu_Open(tunnel);

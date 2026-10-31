@@ -430,7 +430,7 @@ enum class NetworkAbi {
     Unsupported, // no generation in this build can call it - never dispatch through it
     Legacy,      // 01.10.01: PrintParams_Legacy; send_message/send_message_to_printer take no flag
     V0203,       // 02.03.00: PrintParams_0203; bind takes no dev_model
-    Current,     // 02.08.04: the layouts and signatures this build declares directly
+    Current,     // BAMBU_NETWORK_AGENT_VERSION (02.08.01 in OrcaStudio): the layouts and signatures this build declares directly
 };
 
 struct NetworkLibraryVersion {
@@ -443,10 +443,13 @@ struct NetworkLibraryVersion {
 };
 
 // Every row names the generation that can call it, so a series can never be offered without a
-// host-side ABI for it. Series with no generation - 02.08.01 (whose PrintParams lacks the
-// queue_plate_id that 02.08.02 appended, and whose malformed bind table macOS 27 refuses to
-// load), 02.01.01, 02.00.02 and older - must stay out; is_supported_network_version() is the
-// gate that keeps them from loading.
+// host-side ABI for it. Series with no generation - 02.01.01, 02.00.02 and older - must stay out;
+// is_supported_network_version() is the gate that keeps them from loading.
+// OrcaStudio pins Current to BAMBU_NETWORK_AGENT_VERSION (02.08.01), which its Linux runtime is
+// built for. Upstream OrcaSlicer moved Current to 02.08.04, whose PrintParams appends
+// queue_plate_id (harmless to 02.08.01, which never reads past its own layout). Upstream also reports
+// that macOS 27 refuses to load the native 02.08.01 library; OrcaStudio's macOS build loads the Linux
+// plug-in inside its Lima runtime instead.
 static const NetworkLibraryVersion AVAILABLE_NETWORK_VERSIONS[] = {
     {BAMBU_NETWORK_AGENT_VERSION, BAMBU_NETWORK_AGENT_VERSION, nullptr, true, nullptr, NetworkAbi::Current},
     {"02.03.00", "02.03.00", nullptr, false,
