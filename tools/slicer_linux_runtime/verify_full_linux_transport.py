@@ -1091,16 +1091,22 @@ require_order(
     "install_requested_network_runtime(cancel_fn, runtime_error)",
     "commit_network_plugin_configuration(app_config, downloaded_version)",
 )
+# WebDownPluginDlg was removed upstream (dead code); the guide dialog is the remaining web installer.
 for rel in (
-    "src/slic3r/GUI/WebDownPluginDlg.cpp",
     "src/slic3r/GUI/WebGuideDialog.cpp",
 ):
     require(rel, "m_downloaded_plugin_version", "download_plugin(", "install_plugin(")
 
+# Preset bundle archives are unpacked through upstream's confined extractor, which refuses entries
+# (and symlinks) that resolve outside the destination.
 require(
     "src/slic3r/Utils/PresetUpdater.cpp",
-    "unsafe archive path",
-    "relative.lexically_normal()",
+    "extract_archive_confined(",
+)
+require(
+    "src/libslic3r/miniz_extension.cpp",
+    "bool extract_archive_confined(",
+    "is_path_within_root(",
 )
 require(
     "tools/slicer_linux_runtime/wsl/install_runtime.ps1",
@@ -1169,7 +1175,7 @@ require(
 require(
     "src/slic3r/GUI/MediaPlayCtrl.cpp",
     "stop_for_network_reload",
-    'm_tasks.push_back("<reload>")',
+    'm_tasks.push_back({"<reload>", nullptr})',
     "NetworkAgent::active_source_tunnels()",
 )
 require(
