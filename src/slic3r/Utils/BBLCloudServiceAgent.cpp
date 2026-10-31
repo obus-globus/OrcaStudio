@@ -1,6 +1,7 @@
 #include "BBLCloudServiceAgent.hpp"
 #include "BBLNetworkPlugin.hpp"
 #include "SlicerLinuxRuntime/SlicerLinuxRuntimeConfig.hpp"
+#include "Http.hpp"
 
 #include <boost/log/trivial.hpp>
 #include "CloudProvider.hpp"
